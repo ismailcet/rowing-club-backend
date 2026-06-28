@@ -41,9 +41,9 @@ public class Enrollment {
     @Builder.Default
     private EnrollmentStatus status = EnrollmentStatus.ACTIVE;
 
-    @Column(name = "is_attended", nullable = false)
-    @Builder.Default
-    private Boolean isAttended = false;
+    // Yoklama: null = işaretlenmemiş, true = katıldı, false = katılmadı
+    @Column(name = "is_attended")
+    private Boolean isAttended;
 
     public enum EnrollmentStatus {
         ACTIVE, CANCELLED

@@ -17,7 +17,11 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.TextStyle;
 import java.util.List;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -30,6 +34,7 @@ public class SessionService {
     private final SessionRepository sessionRepository;
     private final MembershipTypeRepository membershipTypeRepository;
     private final MembershipRepository membershipRepository;
+    private final EnrollmentRepository enrollmentRepository;
 
 
     @Transactional
@@ -142,6 +147,14 @@ public class SessionService {
     }
 
     public List<SessionResponse> getSessionsForUser(UUID userId, LocalDate startDate, LocalDate endDate) {
+        // Kullanıcının aktif rezervasyonları (branş tamamlansa/iptal olsa bile görünmeli)
+        List<Enrollment> myEnrollments = enrollmentRepository
+                .findAllByUserIdAndStatus(userId, Enrollment.EnrollmentStatus.ACTIVE);
+        Set<UUID> enrolledSessionIds = myEnrollments.stream()
+                .map(e -> e.getSession().getId())
+                .collect(Collectors.toSet());
+
+        // Aktif üyelik branşlarındaki seanslar (rezerve edilebilir)
         List<UUID> membershipTypeIds = membershipRepository
                 .findAllByUserIdAndStatus(userId, Membership.MembershipStatus.ACTIVE)
                 .stream()
@@ -150,14 +163,28 @@ public class SessionService {
                 .distinct()
                 .collect(Collectors.toList());
 
-        if (membershipTypeIds.isEmpty()) {
-            return List.of();
+        Map<UUID, Session> byId = new LinkedHashMap<>();
+        if (!membershipTypeIds.isEmpty()) {
+            for (Session s : sessionRepository
+                    .findByDateRangeAndMembershipTypes(startDate, endDate, membershipTypeIds)) {
+                byId.put(s.getId(), s);
+            }
         }
 
-        return sessionRepository
-                .findByDateRangeAndMembershipTypes(startDate, endDate, membershipTypeIds)
-                .stream()
-                .map(this::toSessionResponse)
+        // Tarih aralığındaki rezerve edilmiş seansları da ekle (listede yoksa)
+        for (Enrollment e : myEnrollments) {
+            Session s = e.getSession();
+            LocalDate d = s.getSessionDate();
+            if (!d.isBefore(startDate) && !d.isAfter(endDate)) {
+                byId.putIfAbsent(s.getId(), s);
+            }
+        }
+
+        return byId.values().stream()
+                .sorted(Comparator
+                        .comparing(Session::getSessionDate)
+                        .thenComparing(Session::getStartTime))
+                .map(s -> toSessionResponse(s, enrolledSessionIds.contains(s.getId())))
                 .collect(Collectors.toList());
     }
 
@@ -244,6 +271,10 @@ public class SessionService {
     }
 
     public SessionResponse toSessionResponse(Session session) {
+        return toSessionResponse(session, false);
+    }
+
+    public SessionResponse toSessionResponse(Session session, boolean isEnrolled) {
         return SessionResponse.builder()
                 .id(session.getId())
                 .templateName(session.getTemplate().getName())
@@ -257,6 +288,7 @@ public class SessionService {
                 .remainingCapacity(session.getMaxCapacity() - session.getCurrentCapacity())
                 .isFull(session.isFull())
                 .status(session.getStatus().name())
+                .isEnrolled(isEnrolled)
                 .build();
     }
 

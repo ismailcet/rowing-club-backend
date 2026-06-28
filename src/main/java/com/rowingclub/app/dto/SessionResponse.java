@@ -24,4 +24,6 @@ public class SessionResponse {
     private Integer remainingCapacity;
     private Boolean isFull;
     private String status;
+
+    private Boolean isEnrolled;
 }

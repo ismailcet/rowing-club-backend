@@ -1,0 +1,2 @@
+ALTER TABLE enrollments ALTER COLUMN is_attended DROP DEFAULT;
+ALTER TABLE enrollments ALTER COLUMN is_attended DROP NOT NULL;

@@ -45,4 +45,15 @@ public class EnrollmentController {
                 ApiResponse.success(enrollmentService.getMyEnrollments(user.getId()))
         );
     }
+
+    /** Üyenin belirli bir üyeliğinin (paketinin) rezervasyon geçmişi. */
+    @GetMapping("/memberships/{membershipId}")
+    public ResponseEntity<ApiResponse<List<EnrollmentResponse>>> getMyMembershipEnrollments(
+            @AuthenticationPrincipal User user,
+            @PathVariable UUID membershipId) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        enrollmentService.getMyMembershipEnrollments(user.getId(), membershipId))
+        );
+    }
 }

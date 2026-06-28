@@ -27,6 +27,7 @@ public class AdminEnrollmentController {
                 ApiResponse.success(enrollmentService.getSessionEnrollments(sessionId))
         );
     }
+
     @PutMapping("/{enrollmentId}/cancel")
     public ResponseEntity<ApiResponse<Void>> cancelEnrollment(
             @PathVariable UUID enrollmentId) {
@@ -34,10 +35,12 @@ public class AdminEnrollmentController {
         return ResponseEntity.ok(ApiResponse.success("Kayıt iptal edildi", null));
     }
 
+    // Yoklama: açık değer (true = katıldı, false = katılmadı)
     @PutMapping("/{enrollmentId}/attendance")
-    public ResponseEntity<ApiResponse<Void>> toggleAttendance(
-            @PathVariable UUID enrollmentId) {
-        enrollmentService.toggleAttendance(enrollmentId);
+    public ResponseEntity<ApiResponse<Void>> setAttendance(
+            @PathVariable UUID enrollmentId,
+            @RequestParam Boolean attended) {
+        enrollmentService.setAttendance(enrollmentId, attended);
         return ResponseEntity.ok(ApiResponse.success("Yoklama güncellendi", null));
     }
 

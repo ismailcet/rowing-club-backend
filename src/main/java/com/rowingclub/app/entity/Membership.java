@@ -65,7 +65,7 @@ public class Membership {
     private Boolean notified1Day = false;
 
     public enum MembershipStatus {
-        PENDING_APPROVAL, ACTIVE, EXPIRED, CANCELLED
+        PENDING_APPROVAL, ACTIVE, EXPIRED, CANCELLED, COMPLETED
     }
 
 
