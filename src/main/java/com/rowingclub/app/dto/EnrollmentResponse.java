@@ -22,4 +22,7 @@ public class EnrollmentResponse {
     private UUID userId;
     private String userFullName;
     private String userEmail;
+
+    private Integer levelNumber;
+    private String levelName;
 }

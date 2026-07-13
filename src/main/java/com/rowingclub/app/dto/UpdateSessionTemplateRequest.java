@@ -21,5 +21,8 @@ public class UpdateSessionTemplateRequest {
     @Min(value = 1, message = "Kontejan en az 1 olmalıdır")
     private Integer capacity;
 
+    @Min(value = 0, message = "Eğitim kontenjanı 0 veya daha fazla olmalıdır")
+    private Integer trainingCapacity;
+
     private Boolean isActive;
 }

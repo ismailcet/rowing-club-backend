@@ -19,5 +19,6 @@ public class MembershipPlanResponse {
     private Integer durationDays;
     private BigDecimal price;
     private Boolean isActive;
+    private Boolean isTraining;
     private Set<String> membershipTypeNames;
 }

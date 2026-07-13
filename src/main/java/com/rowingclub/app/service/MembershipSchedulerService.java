@@ -1,6 +1,9 @@
 package com.rowingclub.app.service;
 
+import com.rowingclub.app.entity.Enrollment;
 import com.rowingclub.app.entity.Membership;
+import com.rowingclub.app.entity.Session;
+import com.rowingclub.app.repository.EnrollmentRepository;
 import com.rowingclub.app.repository.MembershipRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -17,6 +21,7 @@ import java.util.List;
 public class MembershipSchedulerService {
 
     private final MembershipRepository membershipRepository;
+    private final EnrollmentRepository enrollmentRepository;
     private final NotificationService notificationService;
 
     @Scheduled(cron = "0 0 9 * * *", zone = "Europe/Istanbul")
@@ -80,5 +85,56 @@ public class MembershipSchedulerService {
         }
 
         log.info("Süresi dolmuş üyelikler güncellendi: {} üyelik", expiredMemberships.size());
+    }
+
+    /**
+     * Saat başı üyelik yaşam döngüsü:
+     *  1) Süresi (end_date) dolan üyelikler — başka hiçbir koşula bakmaksızın — EXPIRED.
+     *  2) Süresi dolmamış; ders hakkı 0 ve son rezerve edilen dersi geçmiş üyelikler COMPLETED.
+     * EXPIRED her zaman önceliklidir.
+     */
+    @Scheduled(cron = "0 5 * * * *", zone = "Europe/Istanbul")
+    @Transactional
+    public void runHourlyMembershipLifecycle() {
+        LocalDate today = LocalDate.now();
+        expireOverdueMemberships(today);     // 1) önce süresi dolanlar
+        completeFinishedMemberships(today);  // 2) sonra son dersi geçenler
+    }
+
+    /**
+     * Ders hakkı bitmiş (sessionsRemaining = 0) ama hâlâ ACTIVE olan üyelikleri,
+     * son rezerve edilen dersin tarihi/saati geçtikten sonra COMPLETED yapar.
+     * Üyeliğin geleceğe dönük (henüz bitmemiş) aktif kaydı varsa ACTIVE kalır.
+     * Süresi dolmuş (end_date geçmiş) üyelikler burada atlanır; onları EXPIRED yolu işler.
+     */
+    private void completeFinishedMemberships(LocalDate today) {
+        LocalDateTime now = LocalDateTime.now();
+        List<Membership> candidates = membershipRepository.findActiveExhaustedMemberships();
+
+        int completed = 0;
+        for (Membership membership : candidates) {
+            // Süresi dolmuşsa COMPLETED değil EXPIRED olmalı → atla.
+            if (membership.getEndDate().isBefore(today)) {
+                continue;
+            }
+
+            boolean hasUpcomingSession = enrollmentRepository
+                    .findByMembershipId(membership.getId())
+                    .stream()
+                    .filter(e -> e.getStatus() == Enrollment.EnrollmentStatus.ACTIVE)
+                    .anyMatch(e -> {
+                        Session s = e.getSession();
+                        LocalDateTime end = LocalDateTime.of(s.getSessionDate(), s.getEndTime());
+                        return end.isAfter(now); // hâlâ yapılmamış bir dersi var
+                    });
+
+            if (!hasUpcomingSession) {
+                membership.setStatus(Membership.MembershipStatus.COMPLETED);
+                membershipRepository.save(membership);
+                completed++;
+            }
+        }
+
+        log.info("Tamamlanan üyelikler: {} üyelik", completed);
     }
 }

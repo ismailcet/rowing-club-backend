@@ -1,9 +1,11 @@
 package com.rowingclub.app.controller;
 
 import com.rowingclub.app.common.ApiResponse;
+import com.rowingclub.app.dto.BranchProgressResponse;
 import com.rowingclub.app.dto.EnrollmentResponse;
 import com.rowingclub.app.entity.User;
 import com.rowingclub.app.service.EnrollmentService;
+import com.rowingclub.app.service.ProgressService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +21,16 @@ import java.util.UUID;
 public class EnrollmentController {
 
     private final EnrollmentService enrollmentService;
+    private final ProgressService progressService;
+
+
+    @GetMapping("/my/progress")
+    public ResponseEntity<ApiResponse<List<BranchProgressResponse>>> getMyProgress(
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(
+                ApiResponse.success(progressService.getProgress(user.getId()))
+        );
+    }
 
     @PostMapping("/{sessionId}")
     public ResponseEntity<ApiResponse<EnrollmentResponse>> enroll(
@@ -46,7 +58,6 @@ public class EnrollmentController {
         );
     }
 
-    /** Üyenin belirli bir üyeliğinin (paketinin) rezervasyon geçmişi. */
     @GetMapping("/memberships/{membershipId}")
     public ResponseEntity<ApiResponse<List<EnrollmentResponse>>> getMyMembershipEnrollments(
             @AuthenticationPrincipal User user,

@@ -43,6 +43,10 @@ public class MembershipPlan {
     @Builder.Default
     private Boolean isActive = true;
 
+    @Column(name = "is_training", nullable = false)
+    @Builder.Default
+    private Boolean isTraining = false;
+
     @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private Set<MembershipPlanType> planTypes = new HashSet<>();

@@ -29,4 +29,7 @@ public class CreateMembershipPlanRequest {
 
     @NotEmpty(message = "En az bir üyelik tipi seçilmelidir")
     private Set<UUID> membershipTypeIds;
+
+    /** Eğitim paketi mi? (Sadece admin atar, üye satın alamaz, ömür boyu bir kez.) */
+    private Boolean isTraining;
 }

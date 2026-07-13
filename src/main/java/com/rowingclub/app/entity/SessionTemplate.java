@@ -41,6 +41,10 @@ public class SessionTemplate {
     @Column(nullable = false)
     private Integer capacity;
 
+    @Column(name = "training_capacity", nullable = false)
+    @Builder.Default
+    private Integer trainingCapacity = 0;
+
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     private Boolean isActive = true;

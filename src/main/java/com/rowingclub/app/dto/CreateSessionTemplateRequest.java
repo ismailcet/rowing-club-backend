@@ -29,4 +29,8 @@ public class CreateSessionTemplateRequest {
     @NotNull(message = "Kontejan boş olamaz")
     @Min(value = 1, message = "Kontejan en az 1 olmalıdır")
     private Integer capacity;
+
+    /** Eğitim kontenjanı (opsiyonel, varsayılan 0). */
+    @Min(value = 0, message = "Eğitim kontenjanı 0 veya daha fazla olmalıdır")
+    private Integer trainingCapacity;
 }

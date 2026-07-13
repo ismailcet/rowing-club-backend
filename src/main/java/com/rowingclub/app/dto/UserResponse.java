@@ -17,5 +17,8 @@ public class UserResponse {
     private String phone;
     private String userType;
     private Boolean isActive;
+    private Boolean canViewRoster;
+    private Boolean canManageAttendance;
+    private Boolean canViewAthletes;
     private LocalDateTime createdAt;
 }

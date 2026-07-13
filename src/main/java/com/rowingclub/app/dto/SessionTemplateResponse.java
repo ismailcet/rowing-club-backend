@@ -20,5 +20,6 @@ public class SessionTemplateResponse {
     private LocalTime startTime;
     private LocalTime endTime;
     private Integer capacity;
+    private Integer trainingCapacity;
     private Boolean isActive;
 }

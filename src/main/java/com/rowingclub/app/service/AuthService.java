@@ -78,6 +78,10 @@ public class AuthService {
         var user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
 
+        if (Boolean.FALSE.equals(user.getIsActive())) {
+            throw new BusinessException("Hesabınız pasif durumda, oturum yenilenemiyor", HttpStatus.FORBIDDEN);
+        }
+
         if (!jwtService.isTokenValid(request.getRefreshToken(), email)) {
             throw new BusinessException("Geçersiz veya süresi dolmuş refresh token", HttpStatus.UNAUTHORIZED);
         }
@@ -103,7 +107,6 @@ public class AuthService {
                 .phone(request.getPhone())
                 .userType(userType)
                 .build();
-
         userRepository.save(user);
 
         return AuthResponse.builder()

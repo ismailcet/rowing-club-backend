@@ -1,0 +1,2 @@
+ALTER TABLE membership_plans
+    ADD COLUMN is_training BOOLEAN NOT NULL DEFAULT FALSE;

@@ -22,7 +22,7 @@ public class MembershipController {
     @GetMapping("/plans")
     public ResponseEntity<ApiResponse<List<MembershipPlanResponse>>> getActivePlans() {
         return ResponseEntity.ok(
-                ApiResponse.success(membershipService.getAllActivePlans())
+                ApiResponse.success(membershipService.getPurchasablePlans())
         );
     }
 

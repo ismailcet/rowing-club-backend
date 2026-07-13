@@ -42,6 +42,14 @@ public class Session {
     @Column(name = "max_capacity", nullable = false)
     private Integer maxCapacity;
 
+    @Column(name = "training_capacity", nullable = false)
+    @Builder.Default
+    private Integer trainingCapacity = 0;
+
+    @Column(name = "current_training_capacity", nullable = false)
+    @Builder.Default
+    private Integer currentTrainingCapacity = 0;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
@@ -57,5 +65,9 @@ public class Session {
 
     public boolean isFull() {
         return currentCapacity >= maxCapacity;
+    }
+
+    public boolean isTrainingFull() {
+        return currentTrainingCapacity >= trainingCapacity;
     }
 }

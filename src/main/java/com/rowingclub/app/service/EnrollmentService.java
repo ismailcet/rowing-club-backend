@@ -25,6 +25,11 @@ public class EnrollmentService {
     private final UserRepository userRepository;
     private final SessionService sessionService;
     private final SettingService settingService;
+    private final ProgressService progressService;
+    private final NotificationService notificationService;
+    private final SessionCreditService sessionCreditService;
+
+    private static final int LOW_SESSIONS_THRESHOLD = 2;
 
     @Transactional
     public EnrollmentResponse enroll(UUID userId, UUID sessionId) {
@@ -41,10 +46,6 @@ public class EnrollmentService {
         }
 
 
-        if (session.isFull()) {
-            throw new BusinessException("Bu dersin kontenjani doldu", HttpStatus.CONFLICT);
-        }
-
         if (enrollmentRepository.existsByUserIdAndSessionIdAndStatus(
                 userId, sessionId, Enrollment.EnrollmentStatus.ACTIVE)) {
             throw new BusinessException("Bu derse zaten kayıtlısınız", HttpStatus.CONFLICT);
@@ -52,25 +53,44 @@ public class EnrollmentService {
 
         UUID membershipTypeId = session.getTemplate().getMembershipType().getId();
 
-        Membership membership = membershipRepository
+        // Bu branşı kapsayan aktif üyelikler
+        List<Membership> covering = membershipRepository
                 .findAllByUserIdAndStatus(userId, Membership.MembershipStatus.ACTIVE)
                 .stream()
                 .filter(m -> coversBranch(m, membershipTypeId))
-                .findFirst()
-                .orElseThrow(() -> new BusinessException(
-                        "Bu ders için geçerli aktif üyeliğiniz bulunmamaktadır !",
-                        HttpStatus.FORBIDDEN
-                ));
+                .collect(Collectors.toList());
 
-        if (membership.getSessionsRemaining() == 0) {
+        if (covering.isEmpty()) {
             throw new BusinessException(
-                    "Bu ders için yeterli ders hakkınız yok",
+                    "Bu ders için geçerli aktif üyeliğiniz bulunmamaktadır !",
                     HttpStatus.FORBIDDEN
             );
         }
 
-        // Kontejan ve kota düş
-        session.setCurrentCapacity(session.getCurrentCapacity() + 1);
+        // Eğitim üyeliği önceliklidir; kullanılabilir (hak var + tarih uygun) olanı seç.
+        Membership membership = pickMembershipForEnroll(covering, session);
+        if (membership == null) {
+            throw new BusinessException(
+                    "Bu ders için yeterli ders hakkınız yok ya da üyelik tarihiniz uygun değil",
+                    HttpStatus.FORBIDDEN
+            );
+        }
+
+        boolean useTraining = Boolean.TRUE.equals(membership.getPlan().getIsTraining());
+
+        // Kapasite kontrolü ve düşüş (doğru kova)
+        if (useTraining) {
+            if (session.isTrainingFull()) {
+                throw new BusinessException("Bu dersin eğitim kontenjanı doldu", HttpStatus.CONFLICT);
+            }
+            session.setCurrentTrainingCapacity(session.getCurrentTrainingCapacity() + 1);
+        } else {
+            if (session.isFull()) {
+                throw new BusinessException("Bu dersin kontenjani doldu", HttpStatus.CONFLICT);
+            }
+            session.setCurrentCapacity(session.getCurrentCapacity() + 1);
+        }
+
         consumeSession(membership);
 
         sessionRepository.save(session);
@@ -80,6 +100,7 @@ public class EnrollmentService {
                 .user(userRepository.getReferenceById(userId))
                 .session(session)
                 .membership(membership)
+                .usedTrainingSlot(useTraining)
                 .build();
 
         enrollmentRepository.save(enrollment);
@@ -114,12 +135,17 @@ public class EnrollmentService {
             );
         }
 
-        // Kontejan iade
+        // Kontejan iade (kaydın düştüğü kovaya)
         var session = enrollment.getSession();
-        session.setCurrentCapacity(session.getCurrentCapacity() - 1);
+        if (Boolean.TRUE.equals(enrollment.getUsedTrainingSlot())) {
+            session.setCurrentTrainingCapacity(
+                    Math.max(0, session.getCurrentTrainingCapacity() - 1));
+        } else {
+            session.setCurrentCapacity(Math.max(0, session.getCurrentCapacity() - 1));
+        }
 
         // Ders hakkı iade (Yorum A: o branştaki aktif üyeliğe; yoksa kendi üyeliğini dirilt)
-        refundSession(enrollment);
+        sessionCreditService.refundSession(enrollment);
 
         enrollment.setStatus(Enrollment.EnrollmentStatus.CANCELLED);
 
@@ -138,12 +164,22 @@ public class EnrollmentService {
     }
 
     public List<EnrollmentResponse> getSessionEnrollments(UUID sessionId) {
-        sessionRepository.findById(sessionId)
+        var session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Session", "id", sessionId));
+
+        UUID branchId = session.getTemplate().getMembershipType().getId();
+        String branchName = session.getTemplate().getMembershipType().getName();
 
         return enrollmentRepository.findActiveEnrollmentsBySessionId(sessionId)
                 .stream()
-                .map(this::toResponse)
+                .map(e -> {
+                    EnrollmentResponse r = toResponse(e);
+                    var bp = progressService.getBranchProgress(
+                            e.getUser().getId(), branchId, branchName);
+                    r.setLevelNumber(bp.getLevelNumber());
+                    r.setLevelName(bp.getLevelName());
+                    return r;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -154,7 +190,7 @@ public class EnrollmentService {
         var session = enrollment.getSession();
         session.setCurrentCapacity(session.getCurrentCapacity() - 1);
 
-        refundSession(enrollment);
+        sessionCreditService.refundSession(enrollment);
 
         enrollment.setStatus(Enrollment.EnrollmentStatus.CANCELLED);
         sessionRepository.save(session);
@@ -184,10 +220,6 @@ public class EnrollmentService {
             throw new BusinessException("Geçmiş tarihli derse kayıt yapılamaz", HttpStatus.BAD_REQUEST);
         }
 
-        if (session.isFull()) {
-            throw new BusinessException("Bu dersin kontenjani doldu", HttpStatus.CONFLICT);
-        }
-
         if (enrollmentRepository.existsByUserIdAndSessionIdAndStatus(
                 userId, sessionId, Enrollment.EnrollmentStatus.ACTIVE)) {
             throw new BusinessException("Bu kullanıcı zaten kayıtlı", HttpStatus.CONFLICT);
@@ -195,18 +227,41 @@ public class EnrollmentService {
 
         UUID membershipTypeId = session.getTemplate().getMembershipType().getId();
 
-        var membership = membershipRepository
+        List<Membership> covering = membershipRepository
                 .findAllByUserIdAndStatus(userId, Membership.MembershipStatus.ACTIVE)
                 .stream()
                 .filter(m -> coversBranch(m, membershipTypeId))
-                .filter(m -> m.getSessionsRemaining() > 0)
-                .findFirst()
-                .orElseThrow(() -> new BusinessException(
-                        "Bu kullanıcının bu ders için geçerli aktif üyeliği yok",
-                        HttpStatus.FORBIDDEN
-                ));
+                .collect(Collectors.toList());
 
-        session.setCurrentCapacity(session.getCurrentCapacity() + 1);
+        if (covering.isEmpty()) {
+            throw new BusinessException(
+                    "Bu kullanıcının bu ders için geçerli aktif üyeliği yok",
+                    HttpStatus.FORBIDDEN
+            );
+        }
+
+        Membership membership = pickMembershipForEnroll(covering, session);
+        if (membership == null) {
+            throw new BusinessException(
+                    "Bu kullanıcının yeterli ders hakkı yok ya da üyelik tarihi uygun değil",
+                    HttpStatus.FORBIDDEN
+            );
+        }
+
+        boolean useTraining = Boolean.TRUE.equals(membership.getPlan().getIsTraining());
+
+        if (useTraining) {
+            if (session.isTrainingFull()) {
+                throw new BusinessException("Bu dersin eğitim kontenjanı doldu", HttpStatus.CONFLICT);
+            }
+            session.setCurrentTrainingCapacity(session.getCurrentTrainingCapacity() + 1);
+        } else {
+            if (session.isFull()) {
+                throw new BusinessException("Bu dersin kontenjani doldu", HttpStatus.CONFLICT);
+            }
+            session.setCurrentCapacity(session.getCurrentCapacity() + 1);
+        }
+
         consumeSession(membership);
 
         sessionRepository.save(session);
@@ -216,6 +271,7 @@ public class EnrollmentService {
                 .user(userRepository.getReferenceById(userId))
                 .session(session)
                 .membership(membership)
+                .usedTrainingSlot(useTraining)
                 .build();
     }
 
@@ -251,11 +307,44 @@ public class EnrollmentService {
                 .anyMatch(pt -> pt.getMembershipType().getId().equals(membershipTypeId));
     }
 
-    /** Bir ders hakkı düş; 0'a inerse üyeliği COMPLETED yap. */
+    /** Üyelik bu seans için kullanılabilir mi (ders hakkı var + tarih uygun)? */
+    private boolean isUsable(Membership m, Session session) {
+        return m.getSessionsRemaining() != null
+                && m.getSessionsRemaining() > 0
+                && !session.getSessionDate().isAfter(m.getEndDate());
+    }
+
+    /**
+     * Kayıt için kullanılacak üyeliği seçer. Eğitim üyeliği önceliklidir
+     * (eğitim paketi sahibi eğitim kontenjanından düşsün diye); yoksa normal üyelik.
+     */
+    private Membership pickMembershipForEnroll(List<Membership> covering, Session session) {
+        Membership training = covering.stream()
+                .filter(m -> Boolean.TRUE.equals(m.getPlan().getIsTraining()))
+                .filter(m -> isUsable(m, session))
+                .findFirst()
+                .orElse(null);
+        if (training != null) {
+            return training;
+        }
+        return covering.stream()
+                .filter(m -> !Boolean.TRUE.equals(m.getPlan().getIsTraining()))
+                .filter(m -> isUsable(m, session))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Bir ders hakkı düş. Üyelik, ders hakkı 0'a inse bile ACTIVE kalır;
+     * COMPLETED'a geçiş artık rezervasyon anında DEĞİL, son rezerve edilen
+     * dersin tarihi geçtikten sonra zamanlanmış görev tarafından yapılır
+     * (bkz. MembershipSchedulerService#completeFinishedMemberships).
+     */
     private void consumeSession(Membership membership) {
-        membership.setSessionsRemaining(membership.getSessionsRemaining() - 1);
-        if (membership.getSessionsRemaining() <= 0) {
-            membership.setStatus(Membership.MembershipStatus.COMPLETED);
+        int remaining = membership.getSessionsRemaining() - 1;
+        membership.setSessionsRemaining(remaining);
+        if (remaining >= 0 && remaining <= LOW_SESSIONS_THRESHOLD) {
+            notificationService.sendLowSessionsWarning(membership.getUser(), membership);
         }
     }
 
@@ -265,41 +354,6 @@ public class EnrollmentService {
      * 2) Değilse, o branşta başka bir ACTIVE üyelik varsa ona +1.
      * 3) Hiç aktif yoksa, kayıtlı olunan (COMPLETED) üyeliği +1 ile yeniden ACTIVE yap.
      */
-    private void refundSession(Enrollment enrollment) {
-        Membership own = enrollment.getMembership();
-
-        // 1) Kendi üyeliği hâlâ aktifse ona iade
-        if (own.getStatus() == Membership.MembershipStatus.ACTIVE) {
-            own.setSessionsRemaining(own.getSessionsRemaining() + 1);
-            membershipRepository.save(own);
-            return;
-        }
-
-        // 2) O branştaki başka bir aktif üyeliğe iade
-        UUID membershipTypeId = enrollment.getSession().getTemplate().getMembershipType().getId();
-        UUID userId = enrollment.getUser().getId();
-
-        Membership activeInBranch = membershipRepository
-                .findAllByUserIdAndStatus(userId, Membership.MembershipStatus.ACTIVE)
-                .stream()
-                .filter(m -> coversBranch(m, membershipTypeId))
-                .findFirst()
-                .orElse(null);
-
-        if (activeInBranch != null) {
-            activeInBranch.setSessionsRemaining(activeInBranch.getSessionsRemaining() + 1);
-            membershipRepository.save(activeInBranch);
-            return;
-        }
-
-        // 3) Aktif yoksa kendi üyeliğini dirilt
-        own.setSessionsRemaining(own.getSessionsRemaining() + 1);
-        if (own.getStatus() == Membership.MembershipStatus.COMPLETED) {
-            own.setStatus(Membership.MembershipStatus.ACTIVE);
-        }
-        membershipRepository.save(own);
-    }
-
     private EnrollmentResponse toResponse(Enrollment enrollment) {
         return EnrollmentResponse.builder()
                 .id(enrollment.getId())

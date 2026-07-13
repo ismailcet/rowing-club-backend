@@ -35,4 +35,17 @@ public class SessionController {
                 ApiResponse.success(sessionService.getSessionsForUser(user.getId(), startDate, endDate))
         );
     }
+
+    /** Takvim noktaları için hafif uç: sadece dolu tarih listesi. */
+    @GetMapping("/dates")
+    public ResponseEntity<ApiResponse<List<String>>> getMySessionDates(
+            @AuthenticationPrincipal User user,
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        return ResponseEntity.ok(
+                ApiResponse.success(sessionService.getSessionDatesForUser(user.getId(), startDate, endDate))
+        );
+    }
 }

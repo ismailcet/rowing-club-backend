@@ -1,0 +1,3 @@
+ALTER TABLE users
+    ADD COLUMN can_view_roster BOOLEAN NOT NULL DEFAULT TRUE,
+    ADD COLUMN can_manage_attendance BOOLEAN NOT NULL DEFAULT TRUE;

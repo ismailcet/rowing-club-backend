@@ -27,4 +27,47 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
 
     List<Enrollment> findByMembershipId(UUID membershipId);
 
+    /** Üyenin branş (üyelik tipi) bazlı katıldığı (yoklaması işaretli) ders sayıları: [typeId, typeName, count]. */
+    @Query("""
+        SELECT mt.id, mt.name, COUNT(e)
+        FROM Enrollment e
+        JOIN e.session s
+        JOIN s.template t
+        JOIN t.membershipType mt
+        WHERE e.user.id = :userId
+        AND e.status = 'ACTIVE'
+        AND e.isAttended = true
+        GROUP BY mt.id, mt.name
+    """)
+    List<Object[]> countAttendedByBranch(@Param("userId") UUID userId);
+
+    /** Üyenin tek bir branştaki katıldığı ders sayısı (seans detayında seviye göstermek için). */
+    @Query("""
+        SELECT COUNT(e)
+        FROM Enrollment e
+        JOIN e.session s
+        JOIN s.template t
+        WHERE e.user.id = :userId
+        AND t.membershipType.id = :membershipTypeId
+        AND e.status = 'ACTIVE'
+        AND e.isAttended = true
+    """)
+    long countAttendedByUserAndBranch(@Param("userId") UUID userId,
+                                      @Param("membershipTypeId") UUID membershipTypeId);
+
+    /** Üyenin tek bir branşta eğitim kontenjanından katıldığı ders sayısı ("Eğitim N" için). */
+    @Query("""
+        SELECT COUNT(e)
+        FROM Enrollment e
+        JOIN e.session s
+        JOIN s.template t
+        WHERE e.user.id = :userId
+        AND t.membershipType.id = :membershipTypeId
+        AND e.status = 'ACTIVE'
+        AND e.isAttended = true
+        AND e.usedTrainingSlot = true
+    """)
+    long countAttendedTrainingByBranch(@Param("userId") UUID userId,
+                                       @Param("membershipTypeId") UUID membershipTypeId);
+
 }

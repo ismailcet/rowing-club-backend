@@ -55,6 +55,16 @@ public class AdminSessionController {
         return ResponseEntity.ok(ApiResponse.success(sessionService.getAllSessions(startDate, endDate)));
     }
 
+    /** Takvim noktaları için hafif uç: join'siz, sadece dolu tarih listesi. */
+    @GetMapping("/dates")
+    public ResponseEntity<ApiResponse<List<String>>> getSessionDates(
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        return ResponseEntity.ok(ApiResponse.success(sessionService.getSessionDates(startDate, endDate)));
+    }
+
     @PostMapping("/generate")
     public ResponseEntity<ApiResponse<String>> generateWeeklySessions() {
         int count = sessionService.createWeeklySessionsManually();

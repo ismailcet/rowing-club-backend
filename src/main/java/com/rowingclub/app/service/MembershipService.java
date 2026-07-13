@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -29,6 +30,7 @@ public class MembershipService {
     private final MembershipTypeRepository membershipTypeRepository;
     private final MembershipRepository membershipRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public MembershipPlanResponse createPlan(CreateMembershipPlanRequest request) {
@@ -57,6 +59,7 @@ public class MembershipService {
                 .sessionsIncluded(request.getSessionsIncluded())
                 .durationDays(request.getDurationDays())
                 .price(request.getPrice())
+                .isTraining(Boolean.TRUE.equals(request.getIsTraining()))
                 .build();
 
         for (UUID typeId : request.getMembershipTypeIds()) {
@@ -83,6 +86,15 @@ public class MembershipService {
                 .collect(Collectors.toList());
     }
 
+    /** Üyenin satın alabileceği planlar: aktif + eğitim olmayan. */
+    public List<MembershipPlanResponse> getPurchasablePlans() {
+        return membershipPlanRepository.findAllByIsActiveTrue()
+                .stream()
+                .filter(p -> !Boolean.TRUE.equals(p.getIsTraining()))
+                .map(this::toMembershipPlanResponse)
+                .collect(Collectors.toList());
+    }
+
     public List<MembershipPlanResponse> getAllPlans() {
         return membershipPlanRepository.findAll()
                 .stream()
@@ -102,6 +114,7 @@ public class MembershipService {
     public MembershipPlanResponse updatePlan(UUID planId, UpdateMembershipPlanRequest request) {
         var plan = membershipPlanRepository.findById(planId)
                 .orElseThrow(() -> new ResourceNotFoundException("MembershipPlan", "id", planId));
+        BigDecimal oldPrice = plan.getPrice();
 
         // Duplicate kontrolü (sadece ilgili alanlar değiştiyse)
         if (request.getPrice() != null || request.getDurationDays() != null || request.getMembershipTypeIds() != null) {
@@ -133,6 +146,7 @@ public class MembershipService {
         if (request.getDurationDays() != null) plan.setDurationDays(request.getDurationDays());
         if (request.getPrice() != null) plan.setPrice(request.getPrice());
         if (request.getIsActive() != null) plan.setIsActive(request.getIsActive());
+        if (request.getIsTraining() != null) plan.setIsTraining(request.getIsTraining());
 
         if (request.getMembershipTypeIds() != null && !request.getMembershipTypeIds().isEmpty()) {
             plan.getPlanTypes().clear();
@@ -149,6 +163,31 @@ public class MembershipService {
         }
 
         membershipPlanRepository.save(plan);
+
+        if (request.getPrice() != null && oldPrice.compareTo(request.getPrice()) != 0) {
+            BigDecimal newPrice = request.getPrice();
+            Set<UUID> notifiedUserIds = new HashSet<>();
+
+            membershipRepository.findAllByPlanIdAndStatus(planId, Membership.MembershipStatus.ACTIVE)
+                    .forEach(m -> {
+                        if (notifiedUserIds.add(m.getUser().getId())) {
+                            notificationService.sendPlanPriceUpdated(m.getUser(), plan, oldPrice, newPrice);
+                        }
+                    });
+
+            List<UUID> branchIds = plan.getPlanTypes().stream()
+                    .map(pt -> pt.getMembershipType().getId())
+                    .collect(Collectors.toList());
+            if (!branchIds.isEmpty()) {
+                membershipRepository.findActiveByPlanMembershipTypeIds(branchIds)
+                        .forEach(m -> {
+                            if (notifiedUserIds.add(m.getUser().getId())) {
+                                notificationService.sendPlanPriceUpdated(m.getUser(), plan, oldPrice, newPrice);
+                            }
+                        });
+            }
+        }
+
         return toMembershipPlanResponse(plan);
     }
 
@@ -160,13 +199,39 @@ public class MembershipService {
         MembershipPlan plan = membershipPlanRepository.findById(request.getPlanId())
                 .orElseThrow(() -> new ResourceNotFoundException("MembershipPlan", "id", request.getPlanId()));
 
-        for (MembershipPlanType planType : plan.getPlanTypes()) {
-            UUID membershipTypeId = planType.getMembershipType().getId();
-            if (membershipRepository.existsActiveMembershipForType(user.getId(), membershipTypeId)) {
+        boolean assigningTraining = Boolean.TRUE.equals(plan.getIsTraining());
+
+        if (assigningTraining) {
+            // Eğitim paketi ömür boyu yalnızca bir kez (aktif ya da geçmiş).
+            boolean hadTraining = membershipRepository.findAllByUserId(user.getId()).stream()
+                    .anyMatch(m -> Boolean.TRUE.equals(m.getPlan().getIsTraining()));
+            if (hadTraining) {
                 throw new BusinessException(
-                        planType.getMembershipType().getName() + " tipinde zaten aktif bir üyeliğiniz var",
+                        "Bu üyeye eğitim paketi yalnızca bir kez verilebilir",
                         HttpStatus.CONFLICT
                 );
+            }
+        } else {
+            // Aynı branşta zaten aktif (normal) üyelik varsa engelle.
+            // Eğitim üyeliği ayrı bir kova olduğundan çakışma sayılmaz.
+            List<Membership> activeNormal = membershipRepository
+                    .findAllByUserIdAndStatus(user.getId(), Membership.MembershipStatus.ACTIVE)
+                    .stream()
+                    .filter(m -> !Boolean.TRUE.equals(m.getPlan().getIsTraining()))
+                    .collect(Collectors.toList());
+
+            for (MembershipPlanType planType : plan.getPlanTypes()) {
+                UUID typeId = planType.getMembershipType().getId();
+                boolean conflict = activeNormal.stream().anyMatch(m ->
+                        m.getPlan().getPlanTypes().stream()
+                                .anyMatch(pt -> pt.getMembershipType().getId().equals(typeId)));
+                if (conflict) {
+                    throw new BusinessException(
+                            planType.getMembershipType().getName()
+                                    + " tipinde zaten aktif bir üyeliğiniz var",
+                            HttpStatus.CONFLICT
+                    );
+                }
             }
         }
 
@@ -210,6 +275,7 @@ public class MembershipService {
                 .durationDays(plan.getDurationDays())
                 .price(plan.getPrice())
                 .isActive(plan.getIsActive())
+                .isTraining(plan.getIsTraining())
                 .membershipTypeNames(typeNames)
                 .build();
     }

@@ -46,6 +46,21 @@ public class User implements UserDetails {
     @Builder.Default
     private Boolean isActive = true;
 
+    /** Antrenör yetkisi: seans detayı/üye listesini görebilir. */
+    @Column(name = "can_view_roster", nullable = false)
+    @Builder.Default
+    private Boolean canViewRoster = true;
+
+    /** Antrenör yetkisi: yoklama (katıldı/katılmadı) alabilir. */
+    @Column(name = "can_manage_attendance", nullable = false)
+    @Builder.Default
+    private Boolean canManageAttendance = true;
+
+    /** Antrenör yetkisi: "Sporcular" listesini (tüm üye rehberi) görebilir. */
+    @Column(name = "can_view_athletes", nullable = false)
+    @Builder.Default
+    private Boolean canViewAthletes = true;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

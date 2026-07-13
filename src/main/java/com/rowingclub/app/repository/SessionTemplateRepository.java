@@ -14,4 +14,11 @@ public interface SessionTemplateRepository extends JpaRepository<SessionTemplate
             Integer dayOfWeek,
             LocalTime startTime
     );
+
+    boolean existsByMembershipTypeIdAndDayOfWeekAndStartTimeAndIsActiveTrueAndIdNot(
+            UUID membershipTypeId,
+            Integer dayOfWeek,
+            LocalTime startTime,
+            UUID id
+    );
 }

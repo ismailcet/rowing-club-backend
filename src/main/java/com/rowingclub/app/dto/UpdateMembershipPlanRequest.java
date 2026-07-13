@@ -15,4 +15,5 @@ public class UpdateMembershipPlanRequest {
     private BigDecimal price;
     private Set<UUID> membershipTypeIds;
     private Boolean isActive;
+    private Boolean isTraining;
 }

@@ -48,7 +48,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             userRepository.findByEmail(email).ifPresent(user -> {
-                if (jwtService.isTokenValid(token, email)) {
+                // Pasifleştirilmiş kullanıcıların mevcut token'ı da geçersiz sayılır.
+                if (jwtService.isTokenValid(token, email)
+                        && Boolean.TRUE.equals(user.getIsActive())) {
                     var authToken = new UsernamePasswordAuthenticationToken(
                             user, null, user.getAuthorities()
                     );

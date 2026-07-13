@@ -1,0 +1,2 @@
+ALTER TABLE users
+    ADD COLUMN can_view_athletes BOOLEAN NOT NULL DEFAULT TRUE;

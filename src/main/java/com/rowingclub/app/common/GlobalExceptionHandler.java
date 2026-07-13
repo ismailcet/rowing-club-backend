@@ -64,6 +64,15 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("Hesabınız kilitlenmiştir"));
     }
 
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccessDenied(
+            org.springframework.security.access.AccessDeniedException ex) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error(
+                        ex.getMessage() != null ? ex.getMessage() : "Yetkiniz yok"));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneral(Exception ex) {
         log.error("Beklenmeyen hata: ", ex);

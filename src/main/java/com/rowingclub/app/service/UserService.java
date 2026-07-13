@@ -3,6 +3,7 @@ package com.rowingclub.app.service;
 import com.rowingclub.app.common.exception.ResourceNotFoundException;
 import com.rowingclub.app.dto.ResetPasswordRequest;
 import com.rowingclub.app.dto.UpdateProfileRequest;
+import com.rowingclub.app.dto.UpdateTrainerPermissionsRequest;
 import com.rowingclub.app.dto.UserResponse;
 import com.rowingclub.app.entity.User;
 import com.rowingclub.app.repository.UserRepository;
@@ -80,6 +81,24 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
     }
+
+    /** Antrenör yetkilerini günceller. Yoklama açıkken liste görme de zorunlu açıktır. */
+    @Transactional
+    public UserResponse updateTrainerPermissions(
+            UUID userId, UpdateTrainerPermissionsRequest request) {
+        var user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        boolean attendance = Boolean.TRUE.equals(request.getCanManageAttendance());
+        // Yoklama alabilen, listeyi de görebilmeli (tutarlılık).
+        boolean roster = attendance || Boolean.TRUE.equals(request.getCanViewRoster());
+
+        user.setCanViewRoster(roster);
+        user.setCanManageAttendance(attendance);
+        user.setCanViewAthletes(Boolean.TRUE.equals(request.getCanViewAthletes()));
+        userRepository.save(user);
+        return toResponse(user);
+    }
     // --- Mapper ---
 
     private UserResponse toResponse(User user) {
@@ -90,6 +109,9 @@ public class UserService {
                 .phone(user.getPhone())
                 .userType(user.getUserType().getName())
                 .isActive(user.getIsActive())
+                .canViewRoster(user.getCanViewRoster())
+                .canManageAttendance(user.getCanManageAttendance())
+                .canViewAthletes(user.getCanViewAthletes())
                 .createdAt(user.getCreatedAt())
                 .build();
     }

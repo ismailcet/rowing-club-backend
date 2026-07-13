@@ -23,7 +23,14 @@ public class SessionResponse {
     private Integer maxCapacity;
     private Integer remainingCapacity;
     private Boolean isFull;
+
+    // Eğitim kontenjanı (eğitim paketi sahipleri için)
+    private Integer currentTrainingCapacity;
+    private Integer trainingCapacity;
+
     private String status;
 
     private Boolean isEnrolled;
+
+    private Boolean reservable;
 }

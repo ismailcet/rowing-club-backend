@@ -142,10 +142,14 @@ public class DashboardService {
     }
 
     private int current(SessionResponse s) {
-        return s.getCurrentCapacity() == null ? 0 : s.getCurrentCapacity();
+        int base = s.getCurrentCapacity() == null ? 0 : s.getCurrentCapacity();
+        int training = s.getCurrentTrainingCapacity() == null ? 0 : s.getCurrentTrainingCapacity();
+        return base + training;
     }
 
     private int max(SessionResponse s) {
-        return s.getMaxCapacity() == null ? 0 : s.getMaxCapacity();
+        int base = s.getMaxCapacity() == null ? 0 : s.getMaxCapacity();
+        int training = s.getTrainingCapacity() == null ? 0 : s.getTrainingCapacity();
+        return base + training;
     }
 }
