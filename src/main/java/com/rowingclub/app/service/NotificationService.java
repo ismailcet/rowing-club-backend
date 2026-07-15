@@ -31,6 +31,7 @@ public class NotificationService {
 
     private final UserRepository userRepository;
     private final NotificationRepository notificationRepository;
+    private final FcmPushService fcmPushService;
 
     public void sendMembershipExpiryWarning(User user, Membership membership, int daysLeft) {
         String title = "Üyelik Süresi Yaklaşıyor";
@@ -135,6 +136,7 @@ public class NotificationService {
                 .build());
         log.info("[BİLDİRİM] Alıcı: {} | Başlık: {} | Mesaj: {}",
                 user.getEmail(), title, body);
+        fcmPushService.send(user.getFcmToken(), title, body);
     }
 
     @Transactional(readOnly = true)

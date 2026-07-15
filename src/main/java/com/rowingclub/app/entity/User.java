@@ -61,6 +61,9 @@ public class User implements UserDetails {
     @Builder.Default
     private Boolean canViewAthletes = true;
 
+    @Column(name = "fcm_token", length = 500)
+    private String fcmToken;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

@@ -27,6 +27,19 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
 
     List<Enrollment> findByMembershipId(UUID membershipId);
 
+    /** Bir üyeliğin belirli tarih aralığındaki aktif rezervasyon sayısı (haftalık/günlük limit kontrolü için). */
+    @Query("""
+        SELECT COUNT(e) FROM Enrollment e
+        WHERE e.membership.id = :membershipId
+        AND e.status = 'ACTIVE'
+        AND e.session.sessionDate BETWEEN :startDate AND :endDate
+    """)
+    long countActiveByMembershipAndDateRange(
+            @Param("membershipId") UUID membershipId,
+            @Param("startDate") java.time.LocalDate startDate,
+            @Param("endDate") java.time.LocalDate endDate
+    );
+
     /** Üyenin branş (üyelik tipi) bazlı katıldığı (yoklaması işaretli) ders sayıları: [typeId, typeName, count]. */
     @Query("""
         SELECT mt.id, mt.name, COUNT(e)

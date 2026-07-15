@@ -1,6 +1,7 @@
 package com.rowingclub.app.controller;
 
 import com.rowingclub.app.common.ApiResponse;
+import com.rowingclub.app.dto.UpdateFcmTokenRequest;
 import com.rowingclub.app.dto.UpdateProfileRequest;
 import com.rowingclub.app.dto.UserResponse;
 import com.rowingclub.app.entity.User;
@@ -33,5 +34,13 @@ public class UserController {
         return ResponseEntity.ok(
                 ApiResponse.success("Profil güncellendi", userService.updateProfile(user.getId(), request))
         );
+    }
+
+    @PutMapping("/me/fcm-token")
+    public ResponseEntity<ApiResponse<Void>> updateFcmToken(
+            @AuthenticationPrincipal User user,
+            @RequestBody UpdateFcmTokenRequest request) {
+        userService.updateFcmToken(user.getId(), request.getToken());
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 }

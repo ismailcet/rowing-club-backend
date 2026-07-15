@@ -50,6 +50,14 @@ public class UserService {
         return toResponse(user);
     }
 
+    @Transactional
+    public void updateFcmToken(UUID userId, String token) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+        user.setFcmToken(token);
+        userRepository.save(user);
+    }
+
     public List<UserResponse> getAllUsers() {
         return userRepository.findAll()
                 .stream()

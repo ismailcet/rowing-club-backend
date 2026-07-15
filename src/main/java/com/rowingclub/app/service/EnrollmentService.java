@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -72,6 +73,28 @@ public class EnrollmentService {
         if (membership == null) {
             throw new BusinessException(
                     "Bu ders için yeterli ders hakkınız yok ya da üyelik tarihiniz uygun değil",
+                    HttpStatus.FORBIDDEN
+            );
+        }
+
+        LocalDate sessionDate = session.getSessionDate();
+        LocalDate weekStart = sessionDate.minusDays(sessionDate.getDayOfWeek().getValue() - 1);
+        LocalDate weekEnd = weekStart.plusDays(6);
+
+        long weeklyCount = enrollmentRepository.countActiveByMembershipAndDateRange(
+                membership.getId(), weekStart, weekEnd);
+        if (weeklyCount >= 3) {
+            throw new BusinessException(
+                    "Bu pakette bir haftada en fazla 3 derse kayıt olabilirsiniz",
+                    HttpStatus.FORBIDDEN
+            );
+        }
+
+        long dailyCount = enrollmentRepository.countActiveByMembershipAndDateRange(
+                membership.getId(), sessionDate, sessionDate);
+        if (dailyCount >= 2) {
+            throw new BusinessException(
+                    "Bu pakette bir günde en fazla 2 derse kayıt olabilirsiniz",
                     HttpStatus.FORBIDDEN
             );
         }
@@ -244,6 +267,28 @@ public class EnrollmentService {
         if (membership == null) {
             throw new BusinessException(
                     "Bu kullanıcının yeterli ders hakkı yok ya da üyelik tarihi uygun değil",
+                    HttpStatus.FORBIDDEN
+            );
+        }
+
+        LocalDate sessionDate = session.getSessionDate();
+        LocalDate weekStart = sessionDate.minusDays(sessionDate.getDayOfWeek().getValue() - 1);
+        LocalDate weekEnd = weekStart.plusDays(6);
+
+        long weeklyCount = enrollmentRepository.countActiveByMembershipAndDateRange(
+                membership.getId(), weekStart, weekEnd);
+        if (weeklyCount >= 3) {
+            throw new BusinessException(
+                    "Bu pakette bir haftada en fazla 3 derse kayıt olabilirsiniz",
+                    HttpStatus.FORBIDDEN
+            );
+        }
+
+        long dailyCount = enrollmentRepository.countActiveByMembershipAndDateRange(
+                membership.getId(), sessionDate, sessionDate);
+        if (dailyCount >= 2) {
+            throw new BusinessException(
+                    "Bu pakette bir günde en fazla 2 derse kayıt olabilirsiniz",
                     HttpStatus.FORBIDDEN
             );
         }
