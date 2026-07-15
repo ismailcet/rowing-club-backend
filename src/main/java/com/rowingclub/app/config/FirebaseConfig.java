@@ -5,30 +5,26 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
-
-import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
 
 @Slf4j
 @Component
 public class FirebaseConfig {
 
-    @Value("${FIREBASE_CREDENTIALS_JSON:}")
-    private String credentialsJson;
+    private static final String CREDENTIALS_PATH = "firebase-service-account.json";
 
     @PostConstruct
     public void init() {
-        if (credentialsJson == null || credentialsJson.isBlank()) {
-            log.warn("FIREBASE_CREDENTIALS_JSON tanımlı değil, FCM push devre dışı. "
-                    + "Bildirimler yalnızca veritabanına kaydedilecek.");
-            return;
-        }
         try {
+            ClassPathResource resource = new ClassPathResource(CREDENTIALS_PATH);
+            if (!resource.exists()) {
+                log.warn("{} bulunamadı (src/main/resources altına eklenmeli), FCM push devre dışı. "
+                        + "Bildirimler yalnızca veritabanına kaydedilecek.", CREDENTIALS_PATH);
+                return;
+            }
             if (FirebaseApp.getApps().isEmpty()) {
-                GoogleCredentials credentials = GoogleCredentials.fromStream(
-                        new ByteArrayInputStream(credentialsJson.getBytes(StandardCharsets.UTF_8)));
+                GoogleCredentials credentials = GoogleCredentials.fromStream(resource.getInputStream());
                 FirebaseOptions options = FirebaseOptions.builder()
                         .setCredentials(credentials)
                         .build();
