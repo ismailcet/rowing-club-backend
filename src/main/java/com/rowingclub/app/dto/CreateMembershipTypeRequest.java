@@ -10,4 +10,6 @@ public class CreateMembershipTypeRequest {
     private String name;
 
     private String description;
+
+    private Boolean allowsDailyBooking;
 }

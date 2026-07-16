@@ -36,6 +36,7 @@ public class MembershipTypeService {
         var type = MembershipType.builder()
                 .name(name)
                 .description(request.getDescription())
+                .allowsDailyBooking(Boolean.TRUE.equals(request.getAllowsDailyBooking()))
                 .build();
 
         membershipTypeRepository.save(type);
@@ -68,6 +69,10 @@ public class MembershipTypeService {
             type.setDescription(request.getDescription());
         }
 
+        if (request.getAllowsDailyBooking() != null) {
+            type.setAllowsDailyBooking(request.getAllowsDailyBooking());
+        }
+
         membershipTypeRepository.save(type);
         return toResponse(type);
     }
@@ -92,6 +97,7 @@ public class MembershipTypeService {
                 .id(type.getId())
                 .name(type.getName())
                 .description(type.getDescription())
+                .allowsDailyBooking(type.getAllowsDailyBooking())
                 .createdAt(type.getCreatedAt())
                 .build();
     }

@@ -6,4 +6,5 @@ import lombok.Getter;
 public class UpdateMembershipTypeRequest {
     private String name;
     private String description;
+    private Boolean allowsDailyBooking;
 }

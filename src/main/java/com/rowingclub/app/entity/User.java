@@ -64,6 +64,10 @@ public class User implements UserDetails {
     @Column(name = "fcm_token", length = 500)
     private String fcmToken;
 
+    @Column(name = "can_manage_daily_bookings", nullable = false)
+    @Builder.Default
+    private Boolean canManageDailyBookings = false;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

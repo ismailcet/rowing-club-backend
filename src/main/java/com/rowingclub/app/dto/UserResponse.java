@@ -20,5 +20,6 @@ public class UserResponse {
     private Boolean canViewRoster;
     private Boolean canManageAttendance;
     private Boolean canViewAthletes;
+    private Boolean canManageDailyBookings;
     private LocalDateTime createdAt;
 }

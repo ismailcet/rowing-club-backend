@@ -104,6 +104,7 @@ public class UserService {
         user.setCanViewRoster(roster);
         user.setCanManageAttendance(attendance);
         user.setCanViewAthletes(Boolean.TRUE.equals(request.getCanViewAthletes()));
+        user.setCanManageDailyBookings(Boolean.TRUE.equals(request.getCanManageDailyBookings()));
         userRepository.save(user);
         return toResponse(user);
     }
@@ -120,6 +121,7 @@ public class UserService {
                 .canViewRoster(user.getCanViewRoster())
                 .canManageAttendance(user.getCanManageAttendance())
                 .canViewAthletes(user.getCanViewAthletes())
+                .canManageDailyBookings(user.getCanManageDailyBookings())
                 .createdAt(user.getCreatedAt())
                 .build();
     }

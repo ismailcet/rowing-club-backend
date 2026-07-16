@@ -14,5 +14,6 @@ public class MembershipTypeResponse {
     private UUID id;
     private String name;
     private String description;
+    private Boolean allowsDailyBooking;
     private LocalDateTime createdAt;
 }

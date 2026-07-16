@@ -18,11 +18,11 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/admin/membership-types")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
 public class AdminMembershipTypeController {
 
     private final MembershipTypeService membershipTypeService;
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<ApiResponse<MembershipTypeResponse>> create(
             @Valid @RequestBody CreateMembershipTypeRequest request) {
@@ -31,11 +31,13 @@ public class AdminMembershipTypeController {
                 .body(ApiResponse.success("Üyelik tipi oluşturuldu", membershipTypeService.create(request)));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','ANTRENÖR')")
     @GetMapping
     public ResponseEntity<ApiResponse<List<MembershipTypeResponse>>> getAll() {
         return ResponseEntity.ok(ApiResponse.success(membershipTypeService.getAll()));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<MembershipTypeResponse>> update(
             @PathVariable UUID id,
@@ -45,6 +47,7 @@ public class AdminMembershipTypeController {
         );
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
         membershipTypeService.delete(id);

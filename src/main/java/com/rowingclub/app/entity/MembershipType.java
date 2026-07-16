@@ -26,6 +26,10 @@ public class MembershipType {
     @Column(length = 255)
     private String description;
 
+    @Column(name = "allows_daily_booking", nullable = false)
+    @Builder.Default
+    private Boolean allowsDailyBooking = false;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
