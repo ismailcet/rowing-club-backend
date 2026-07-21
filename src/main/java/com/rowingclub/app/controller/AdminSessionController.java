@@ -2,6 +2,7 @@ package com.rowingclub.app.controller;
 
 import com.rowingclub.app.common.ApiResponse;
 import com.rowingclub.app.dto.*;
+import com.rowingclub.app.entity.User;
 import com.rowingclub.app.service.SessionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -44,6 +46,7 @@ public class AdminSessionController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<SessionResponse>>> getAllSessions(
+            @AuthenticationPrincipal User user,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false)
@@ -52,7 +55,7 @@ public class AdminSessionController {
         if (startDate == null) startDate = LocalDate.now();
         if (endDate == null) endDate = startDate.plusDays(7);
 
-        return ResponseEntity.ok(ApiResponse.success(sessionService.getAllSessions(startDate, endDate)));
+        return ResponseEntity.ok(ApiResponse.success(sessionService.getAllSessions(startDate, endDate, user)));
     }
 
     /** Takvim noktaları için hafif uç: join'siz, sadece dolu tarih listesi. */

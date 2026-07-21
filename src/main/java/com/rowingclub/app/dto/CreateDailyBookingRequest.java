@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -17,6 +18,7 @@ public class CreateDailyBookingRequest {
     private LocalTime startTime;
     private LocalTime endTime;
     private Integer capacity;
+    private List<EquipmentLineRequest> equipmentLines;
     private String customerName;
     private String customerPhone;
     private String notes;

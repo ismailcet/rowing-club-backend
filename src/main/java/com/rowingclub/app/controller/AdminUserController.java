@@ -5,6 +5,7 @@ import com.rowingclub.app.dto.AuthResponse;
 import com.rowingclub.app.dto.BranchProgressResponse;
 import com.rowingclub.app.dto.CreateUserRequest;
 import com.rowingclub.app.dto.ResetPasswordRequest;
+import com.rowingclub.app.dto.UpdateTrainerBranchesRequest;
 import com.rowingclub.app.dto.UpdateTrainerPermissionsRequest;
 import com.rowingclub.app.dto.UserResponse;
 import com.rowingclub.app.entity.User;
@@ -97,5 +98,16 @@ public class AdminUserController {
         return ResponseEntity.ok(ApiResponse.success(
                 "Yetkiler güncellendi",
                 userService.updateTrainerPermissions(userId, request)));
+    }
+
+    /** Admin: antrenörün görebileceği branşları günceller. */
+    @PutMapping("/{userId}/branches")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<UserResponse>> updateBranches(
+            @PathVariable UUID userId,
+            @RequestBody UpdateTrainerBranchesRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Branşlar güncellendi",
+                userService.updateTrainerBranches(userId, request)));
     }
 }

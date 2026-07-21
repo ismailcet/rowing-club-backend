@@ -18,67 +18,33 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "daily_bookings")
+@Table(name = "branch_equipment")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class DailyBooking {
+public class BranchEquipment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "membership_type_id", nullable = false)
     private MembershipType membershipType;
 
-    @Column(name = "booking_date", nullable = false)
-    private LocalDate bookingDate;
-
-    @Column(name = "start_time", nullable = false)
-    private LocalTime startTime;
-
-    @Column(name = "end_time", nullable = false)
-    private LocalTime endTime;
-
-    @Column(nullable = false)
-    private Integer capacity;
-
     @Enumerated(EnumType.STRING)
-    @Column(name = "equipment_type", length = 20)
+    @Column(name = "equipment_type", nullable = false, length = 20)
     private EquipmentType equipmentType;
 
-    @Column(name = "equipment_quantity")
-    private Integer equipmentQuantity;
-
-    @Column(name = "customer_name", length = 150)
-    private String customerName;
-
-    @Column(name = "customer_phone", length = 30)
-    private String customerPhone;
-
-    @Column(length = 500)
-    private String notes;
-
-    @Column(name = "payment_received", nullable = false)
-    @Builder.Default
-    private Boolean paymentReceived = false;
-
     @Column(nullable = false)
     @Builder.Default
-    private Boolean arrived = false;
-
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "created_by", nullable = false)
-    private User createdBy;
+    private Integer quantity = 0;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

@@ -1,0 +1,1 @@
+ALTER TABLE daily_bookings ADD COLUMN equipment_quantity INTEGER;

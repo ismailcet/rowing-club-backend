@@ -4,12 +4,14 @@ import com.rowingclub.app.common.ApiResponse;
 import com.rowingclub.app.dto.CreateMembershipTypeRequest;
 import com.rowingclub.app.dto.MembershipTypeResponse;
 import com.rowingclub.app.dto.UpdateMembershipTypeRequest;
+import com.rowingclub.app.entity.User;
 import com.rowingclub.app.service.MembershipTypeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,8 +35,9 @@ public class AdminMembershipTypeController {
 
     @PreAuthorize("hasAnyRole('ADMIN','ANTRENÖR')")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<MembershipTypeResponse>>> getAll() {
-        return ResponseEntity.ok(ApiResponse.success(membershipTypeService.getAll()));
+    public ResponseEntity<ApiResponse<List<MembershipTypeResponse>>> getAll(
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(ApiResponse.success(membershipTypeService.getAllForUser(user)));
     }
 
     @PreAuthorize("hasRole('ADMIN')")

@@ -3,6 +3,7 @@ package com.rowingclub.app.dto;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -21,5 +22,6 @@ public class UserResponse {
     private Boolean canManageAttendance;
     private Boolean canViewAthletes;
     private Boolean canManageDailyBookings;
+    private List<UUID> assignedBranchIds;
     private LocalDateTime createdAt;
 }

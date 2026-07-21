@@ -3,6 +3,8 @@ package com.rowingclub.app.dto;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 
+import java.util.List;
+
 @Getter
 public class CreateMembershipTypeRequest {
 
@@ -12,4 +14,6 @@ public class CreateMembershipTypeRequest {
     private String description;
 
     private Boolean allowsDailyBooking;
+
+    private List<BranchEquipmentRequest> equipment;
 }

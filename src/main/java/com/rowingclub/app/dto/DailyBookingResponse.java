@@ -1,5 +1,6 @@
 package com.rowingclub.app.dto;
 
+import com.rowingclub.app.entity.EquipmentType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -22,6 +23,8 @@ public class DailyBookingResponse {
     private LocalTime startTime;
     private LocalTime endTime;
     private Integer capacity;
+    private EquipmentType equipmentType;
+    private Integer equipmentQuantity;
     private String customerName;
     private String customerPhone;
     private String notes;

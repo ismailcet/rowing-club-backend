@@ -14,6 +14,7 @@ import java.util.UUID;
 public class SessionResponse {
     private UUID id;
     private String templateName;
+    private UUID membershipTypeId;
     private String membershipTypeName;
     private LocalDate sessionDate;
     private String dayOfWeekLabel;

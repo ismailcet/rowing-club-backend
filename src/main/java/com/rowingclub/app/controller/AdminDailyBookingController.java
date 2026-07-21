@@ -38,9 +38,10 @@ public class AdminDailyBookingController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<DailyBookingResponse>>> getForDate(
+            @AuthenticationPrincipal User user,
             @RequestParam
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        return ResponseEntity.ok(ApiResponse.success(dailyBookingService.getForDate(date)));
+        return ResponseEntity.ok(ApiResponse.success(dailyBookingService.getForDate(date, user)));
     }
 
     @GetMapping("/dates")
@@ -53,7 +54,7 @@ public class AdminDailyBookingController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<DailyBookingResponse>> create(
+    public ResponseEntity<ApiResponse<List<DailyBookingResponse>>> create(
             @AuthenticationPrincipal User user,
             @RequestBody CreateDailyBookingRequest request) {
         requireDailyBookingPermission(user);

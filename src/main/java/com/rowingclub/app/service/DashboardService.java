@@ -68,7 +68,7 @@ public class DashboardService {
                 .count();
 
         // --- Bu haftaki sessionlar ---
-        List<SessionResponse> sessions = sessionService.getAllSessions(weekStart, weekEnd);
+        List<SessionResponse> sessions = sessionService.getAllSessions(weekStart, weekEnd, null);
         int sessionsThisWeek = sessions.size();
 
         // --- Genel doluluk (Σcurrent / Σmax) ---

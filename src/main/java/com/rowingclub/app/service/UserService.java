@@ -3,9 +3,14 @@ package com.rowingclub.app.service;
 import com.rowingclub.app.common.exception.ResourceNotFoundException;
 import com.rowingclub.app.dto.ResetPasswordRequest;
 import com.rowingclub.app.dto.UpdateProfileRequest;
+import com.rowingclub.app.dto.UpdateTrainerBranchesRequest;
 import com.rowingclub.app.dto.UpdateTrainerPermissionsRequest;
 import com.rowingclub.app.dto.UserResponse;
+import com.rowingclub.app.entity.MembershipType;
+import com.rowingclub.app.entity.TrainerBranch;
 import com.rowingclub.app.entity.User;
+import com.rowingclub.app.repository.MembershipTypeRepository;
+import com.rowingclub.app.repository.TrainerBranchRepository;
 import com.rowingclub.app.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,6 +27,8 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final TrainerBranchRepository trainerBranchRepository;
+    private final MembershipTypeRepository membershipTypeRepository;
 
     public UserResponse getProfile(UUID userId) {
         User user = userRepository.findById(userId)
@@ -108,6 +115,30 @@ public class UserService {
         userRepository.save(user);
         return toResponse(user);
     }
+    /** Antrenörün görebileceği branşları günceller (boş liste = kısıtlama yok, hepsini görür). */
+    @Transactional
+    public UserResponse updateTrainerBranches(UUID userId, UpdateTrainerBranchesRequest request) {
+        var user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        trainerBranchRepository.deleteByTrainerId(userId);
+
+        List<UUID> ids = request.getMembershipTypeIds() == null
+                ? List.of() : request.getMembershipTypeIds();
+
+        for (UUID membershipTypeId : ids) {
+            MembershipType type = membershipTypeRepository.findById(membershipTypeId)
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "MembershipType", "id", membershipTypeId));
+            trainerBranchRepository.save(TrainerBranch.builder()
+                    .trainer(user)
+                    .membershipType(type)
+                    .build());
+        }
+
+        return toResponse(user);
+    }
+
     // --- Mapper ---
 
     private UserResponse toResponse(User user) {
@@ -122,6 +153,8 @@ public class UserService {
                 .canManageAttendance(user.getCanManageAttendance())
                 .canViewAthletes(user.getCanViewAthletes())
                 .canManageDailyBookings(user.getCanManageDailyBookings())
+                .assignedBranchIds(
+                        trainerBranchRepository.findMembershipTypeIdsByTrainerId(user.getId()))
                 .createdAt(user.getCreatedAt())
                 .build();
     }

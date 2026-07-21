@@ -40,6 +40,7 @@ public class SessionService {
     private final EnrollmentRepository enrollmentRepository;
     private final NotificationService notificationService;
     private final SessionCreditService sessionCreditService;
+    private final TrainerBranchRepository trainerBranchRepository;
 
 
     @Transactional
@@ -288,11 +289,28 @@ public class SessionService {
                 && !s.getSessionDate().isAfter(m.getEndDate());
     }
 
-    public List<SessionResponse> getAllSessions(LocalDate startDate, LocalDate endDate) {
-        return sessionRepository.findAllByDateRange(startDate, endDate)
+    public List<SessionResponse> getAllSessions(LocalDate startDate, LocalDate endDate, User requester) {
+        List<SessionResponse> all = sessionRepository.findAllByDateRange(startDate, endDate)
                 .stream()
                 .map(this::toSessionResponse)
                 .collect(Collectors.toList());
+
+        List<UUID> allowed = allowedBranchIdsOrNull(requester);
+        if (allowed == null) {
+            return all;
+        }
+        return all.stream()
+                .filter(r -> allowed.contains(r.getMembershipTypeId()))
+                .collect(Collectors.toList());
+    }
+
+    /** ADMIN veya atama yapılmamış antrenör için null (kısıtlama yok) döner. */
+    private List<UUID> allowedBranchIdsOrNull(User requester) {
+        if (requester == null || "ADMIN".equalsIgnoreCase(requester.getUserType().getName())) {
+            return null;
+        }
+        List<UUID> assigned = trainerBranchRepository.findMembershipTypeIdsByTrainerId(requester.getId());
+        return assigned.isEmpty() ? null : assigned;
     }
 
     /** Takvim noktaları için hafif liste: sadece dolu tarihler (yyyy-MM-dd). */
@@ -446,6 +464,7 @@ public class SessionService {
         return SessionResponse.builder()
                 .id(session.getId())
                 .templateName(session.getTemplate().getName())
+                .membershipTypeId(session.getTemplate().getMembershipType().getId())
                 .membershipTypeName(session.getTemplate().getMembershipType().getName())
                 .sessionDate(session.getSessionDate())
                 .dayOfWeekLabel(getDayLabel(session.getSessionDate().getDayOfWeek().getValue()))
