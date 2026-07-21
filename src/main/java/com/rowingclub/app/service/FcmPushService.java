@@ -28,7 +28,15 @@ public class FcmPushService {
                     .build();
             FirebaseMessaging.getInstance().send(message);
         } catch (Exception e) {
-            log.warn("FCM push gönderilemedi: {}", e.getMessage());
+            log.warn("FCM push gönderilemedi: {} ({})", e.getMessage(), e.getClass().getName());
+            Throwable cause = e.getCause();
+            int depth = 0;
+            while (cause != null && depth < 5) {
+                log.warn("  -> neden: {} ({})", cause.getMessage(), cause.getClass().getName());
+                cause = cause.getCause();
+                depth++;
+            }
+            log.warn("Tam stack trace:", e);
         }
     }
 }
