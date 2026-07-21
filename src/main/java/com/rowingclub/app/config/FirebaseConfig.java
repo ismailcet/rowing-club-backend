@@ -8,11 +8,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Slf4j
 @Component
 public class FirebaseConfig {
 
     private static final String CREDENTIALS_PATH = "firebase-service-account.json";
+    private static final List<String> FCM_SCOPES = List.of(
+            "https://www.googleapis.com/auth/firebase.messaging"
+    );
 
     @PostConstruct
     public void init() {
@@ -24,7 +29,8 @@ public class FirebaseConfig {
                 return;
             }
             if (FirebaseApp.getApps().isEmpty()) {
-                GoogleCredentials credentials = GoogleCredentials.fromStream(resource.getInputStream());
+                GoogleCredentials credentials = GoogleCredentials.fromStream(resource.getInputStream())
+                        .createScoped(FCM_SCOPES);
                 FirebaseOptions options = FirebaseOptions.builder()
                         .setCredentials(credentials)
                         .build();
