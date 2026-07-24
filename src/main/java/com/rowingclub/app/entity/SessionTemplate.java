@@ -49,6 +49,12 @@ public class SessionTemplate {
     @Builder.Default
     private Boolean isActive = true;
 
+    /** true ise şablon "silinmiş" sayılır: hiçbir listede görünmez, yeni ders
+     *  üretmez; geçmiş dersler/kayıtlar/yoklamalar bozulmadan kalır. */
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean deleted = false;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

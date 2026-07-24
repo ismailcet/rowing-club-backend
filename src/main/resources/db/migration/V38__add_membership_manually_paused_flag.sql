@@ -1,0 +1,1 @@
+ALTER TABLE memberships ADD COLUMN manually_paused BOOLEAN NOT NULL DEFAULT FALSE;

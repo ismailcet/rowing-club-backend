@@ -9,6 +9,7 @@ import java.util.UUID;
 
 public interface SessionTemplateRepository extends JpaRepository<SessionTemplate, UUID> {
     List<SessionTemplate> findAllByIsActiveTrue();
+    List<SessionTemplate> findAllByDeletedFalse();
     boolean existsByMembershipTypeIdAndDayOfWeekAndStartTimeAndIsActiveTrue(
             UUID membershipTypeId,
             Integer dayOfWeek,

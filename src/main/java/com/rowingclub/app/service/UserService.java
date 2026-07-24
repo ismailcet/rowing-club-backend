@@ -1,18 +1,22 @@
 package com.rowingclub.app.service;
 
+import com.rowingclub.app.common.exception.BusinessException;
 import com.rowingclub.app.common.exception.ResourceNotFoundException;
 import com.rowingclub.app.dto.ResetPasswordRequest;
 import com.rowingclub.app.dto.UpdateProfileRequest;
 import com.rowingclub.app.dto.UpdateTrainerBranchesRequest;
 import com.rowingclub.app.dto.UpdateTrainerPermissionsRequest;
 import com.rowingclub.app.dto.UserResponse;
+import com.rowingclub.app.entity.Membership.MembershipStatus;
 import com.rowingclub.app.entity.MembershipType;
 import com.rowingclub.app.entity.TrainerBranch;
 import com.rowingclub.app.entity.User;
+import com.rowingclub.app.repository.MembershipRepository;
 import com.rowingclub.app.repository.MembershipTypeRepository;
 import com.rowingclub.app.repository.TrainerBranchRepository;
 import com.rowingclub.app.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +33,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final TrainerBranchRepository trainerBranchRepository;
     private final MembershipTypeRepository membershipTypeRepository;
+    private final MembershipRepository membershipRepository;
 
     public UserResponse getProfile(UUID userId) {
         User user = userRepository.findById(userId)
@@ -66,14 +71,14 @@ public class UserService {
     }
 
     public List<UserResponse> getAllUsers() {
-        return userRepository.findAll()
+        return userRepository.findAllByDeletedFalse()
                 .stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
     public List<UserResponse> getUsersByType(String userTypeName) {
-        return userRepository.findAllByUserTypeName(userTypeName)
+        return userRepository.findAllByUserTypeNameAndDeletedFalse(userTypeName)
                 .stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
@@ -86,6 +91,35 @@ public class UserService {
         user.setIsActive(!user.getIsActive());
         userRepository.save(user);
         return toResponse(user);
+    }
+
+    /**
+     * Kullanıcıyı "siler" — aslında hiçbir kaydını silmez (üyelik, ödeme,
+     * yoklama, gelir/gider geçmişi bozulmadan kalır), sadece:
+     * 1) Aktif/onay bekleyen üyeliği varsa reddeder (önce ele alınmalı),
+     * 2) `deleted = true` ve `isActive = false` yapar — bundan sonra hiçbir
+     *    listede görünmez, giriş yapamaz (mevcut token'ı dahil geçersizleşir),
+     * 3) e-postasını benzersiz bir şekilde değiştirir — böylece aynı e-posta
+     *    adresiyle yeni bir kullanıcı kaydolabilir.
+     */
+    @Transactional
+    public void deleteUser(UUID userId) {
+        var user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        if (membershipRepository.existsByUserIdAndStatusIn(
+                userId, List.of(MembershipStatus.ACTIVE, MembershipStatus.PENDING_APPROVAL))) {
+            throw new BusinessException(
+                    "Bu üyenin aktif veya onay bekleyen bir üyeliği var, silinemez. "
+                            + "Önce üyeliği iptal edin ya da bitmesini bekleyin.",
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        user.setDeleted(true);
+        user.setIsActive(false);
+        user.setEmail("deleted_" + user.getId() + "_" + user.getEmail());
+        userRepository.save(user);
     }
 
     @Transactional

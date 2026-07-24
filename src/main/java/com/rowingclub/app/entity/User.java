@@ -46,6 +46,12 @@ public class User implements UserDetails {
     @Builder.Default
     private Boolean isActive = true;
 
+    /** true ise kullanıcı "silinmiş" sayılır: hiçbir listede görünmez, giriş
+     *  yapamaz, geçmiş kayıtları (üyelik/ödeme/vb.) bozulmadan saklanır. */
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean deleted = false;
+
     /** Antrenör yetkisi: seans detayı/üye listesini görebilir. */
     @Column(name = "can_view_roster", nullable = false)
     @Builder.Default

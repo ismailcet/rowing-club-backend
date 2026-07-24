@@ -13,4 +13,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     List<User> findAllByUserTypeName(String userTypeName);
     List<User> findAllByUserTypeNameAndCanManageAttendanceTrue(String userTypeName);
 
+    List<User> findAllByDeletedFalse();
+    List<User> findAllByUserTypeNameAndDeletedFalse(String userTypeName);
+    List<User> findAllByUserTypeNameAndCanManageAttendanceTrueAndDeletedFalse(String userTypeName);
+
 }

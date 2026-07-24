@@ -44,6 +44,13 @@ public class AdminSessionController {
         return ResponseEntity.ok(ApiResponse.success("Şablon deaktif edildi", null));
     }
 
+    /** Şablonu tüm listelerden gizler; geçmiş dersler/kayıtlar/yoklamalar korunur. */
+    @DeleteMapping("/templates/{id}/hide")
+    public ResponseEntity<ApiResponse<Void>> deleteTemplate(@PathVariable UUID id) {
+        sessionService.deleteTemplate(id);
+        return ResponseEntity.ok(ApiResponse.success("Şablon silindi", null));
+    }
+
     @GetMapping
     public ResponseEntity<ApiResponse<List<SessionResponse>>> getAllSessions(
             @AuthenticationPrincipal User user,

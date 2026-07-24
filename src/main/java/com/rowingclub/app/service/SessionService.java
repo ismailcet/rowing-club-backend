@@ -72,7 +72,7 @@ public class SessionService {
     }
 
     public List<SessionTemplateResponse> getAllTemplates() {
-        return sessionTemplateRepository.findAll()
+        return sessionTemplateRepository.findAllByDeletedFalse()
                 .stream()
                 .map(this::toTemplateResponse)
                 .collect(Collectors.toList());
@@ -82,6 +82,20 @@ public class SessionService {
     public void deactivateTemplate(UUID templateId) {
         SessionTemplate template = sessionTemplateRepository.findById(templateId)
                 .orElseThrow(() -> new ResourceNotFoundException("SessionTemplate", "id", templateId));
+        template.setIsActive(false);
+        sessionTemplateRepository.save(template);
+    }
+
+    /**
+     * Şablonu "siler" — geçmiş dersleri/kayıtları/yoklamaları hiç silmez, sadece
+     * `deleted = true` ve `isActive = false` yapar. Bundan sonra hiçbir listede
+     * görünmez ve haftalık otomatik üretim ondan yeni ders oluşturmaz.
+     */
+    @Transactional
+    public void deleteTemplate(UUID templateId) {
+        SessionTemplate template = sessionTemplateRepository.findById(templateId)
+                .orElseThrow(() -> new ResourceNotFoundException("SessionTemplate", "id", templateId));
+        template.setDeleted(true);
         template.setIsActive(false);
         sessionTemplateRepository.save(template);
     }
@@ -133,7 +147,7 @@ public class SessionService {
     public int createWeeklySessionsManually() {
         log.info("Manuel haftalık session oluşturma tetiklendi...");
 
-        LocalDate nextMonday = LocalDate.now().with(DayOfWeek.MONDAY); //.plusWeeks(0);
+        LocalDate nextMonday = LocalDate.now().with(DayOfWeek.MONDAY).plusWeeks(1);
 
         List<SessionTemplate> activeTemplates = sessionTemplateRepository.findAllByIsActiveTrue();
         int created = 0;

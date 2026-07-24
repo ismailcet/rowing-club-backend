@@ -12,6 +12,8 @@ import java.util.UUID;
 
 public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
 
+    void deleteByUserId(UUID userId);
+
     boolean existsByUserIdAndSessionIdAndStatus(UUID userId, UUID sessionId, EnrollmentStatus status);
 
     Optional<Enrollment> findByIdAndUserId(UUID id, UUID userId);

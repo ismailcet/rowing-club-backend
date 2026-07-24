@@ -262,6 +262,43 @@ public class MembershipService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Bir üyeliği (paketi) aktif ↔ pasif (iptal) arasında değiştirir. Sadece
+     * ACTIVE ve (admin tarafından elle pasifleştirilmiş) CANCELLED durumları
+     * arasında geçerlidir — ödeme reddi gibi başka yollarla iptal edilmiş
+     * üyelikler, süresi dolmuş, onay bekleyen ya da tamamlanmış üyelikler bu
+     * şekilde değiştirilemez.
+     */
+    @Transactional
+    public MembershipResponse toggleMembershipActive(UUID membershipId) {
+        Membership membership = membershipRepository.findById(membershipId)
+                .orElseThrow(() -> new ResourceNotFoundException("Membership", "id", membershipId));
+
+        if (membership.getStatus() == Membership.MembershipStatus.ACTIVE) {
+            membership.setStatus(Membership.MembershipStatus.CANCELLED);
+            membership.setManuallyPaused(true);
+        } else if (membership.getStatus() == Membership.MembershipStatus.CANCELLED
+                && Boolean.TRUE.equals(membership.getManuallyPaused())) {
+            membership.setStatus(Membership.MembershipStatus.ACTIVE);
+            membership.setManuallyPaused(false);
+        } else if (membership.getStatus() == Membership.MembershipStatus.CANCELLED) {
+            throw new BusinessException(
+                    "Bu üyelik başka bir sebeple (ör. ödeme reddi) iptal edilmiş, "
+                            + "elle tekrar aktifleştirilemez.",
+                    HttpStatus.CONFLICT
+            );
+        } else {
+            throw new BusinessException(
+                    "Bu durumdaki bir üyelik (" + membership.getStatus()
+                            + ") elle aktif/pasif yapılamaz.",
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        membershipRepository.save(membership);
+        return toMembershipResponse(membership);
+    }
+
     private MembershipPlanResponse toMembershipPlanResponse(MembershipPlan plan) {
         Set<String> typeNames = plan.getPlanTypes().stream()
                 .map(pt -> pt.getMembershipType().getName())
@@ -296,6 +333,7 @@ public class MembershipService {
                 .startDate(membership.getStartDate())
                 .endDate(membership.getEndDate())
                 .status(membership.getStatus().name())
+                .manuallyPaused(membership.getManuallyPaused())
                 .build();
     }
 

@@ -13,6 +13,8 @@ import java.util.UUID;
 
 public interface DailyBookingRepository extends JpaRepository<DailyBooking, UUID> {
 
+    boolean existsByCreatedById(UUID userId);
+
     List<DailyBooking> findAllByBookingDateOrderByStartTime(LocalDate bookingDate);
 
     @Query("SELECT DISTINCT d.bookingDate FROM DailyBooking d WHERE d.bookingDate BETWEEN :startDate AND :endDate")

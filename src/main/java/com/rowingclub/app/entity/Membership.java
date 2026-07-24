@@ -44,6 +44,14 @@ public class Membership {
     @Builder.Default
     private MembershipStatus status = MembershipStatus.ACTIVE;
 
+    /** true ise mevcut CANCELLED durumu admin'in elle "pasifleştir" aksiyonundan
+     *  geliyor demektir — sadece bu durumda tekrar aktifleştirilebilir. Ödeme
+     *  reddi gibi başka yollarla iptal edilen üyelikler bu alanı false bırakır
+     *  ve elle tekrar aktifleştirilemez. */
+    @Column(name = "manually_paused", nullable = false)
+    @Builder.Default
+    private Boolean manuallyPaused = false;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

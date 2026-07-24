@@ -148,10 +148,33 @@ public class ReminderRuleService {
             throw new BusinessException("Mesaj zorunludur", HttpStatus.BAD_REQUEST);
         }
         ReminderRule.TargetType targetType = parseTargetType(request.getTargetType());
-        validateTarget(targetType, request.getTargetRole(), request.getTargetUserId());
+        if (targetType == ReminderRule.TargetType.ROLE
+                && (request.getTargetRole() == null || request.getTargetRole().isBlank())) {
+            throw new BusinessException("Rol hedefinde targetRole zorunludur", HttpStatus.BAD_REQUEST);
+        }
+        if (targetType == ReminderRule.TargetType.USER
+                && (request.getTargetUserIds() == null || request.getTargetUserIds().isEmpty())) {
+            throw new BusinessException(
+                    "Kişi hedefinde en az bir kullanıcı seçilmelidir", HttpStatus.BAD_REQUEST);
+        }
 
-        List<User> targets = resolveTargetUsers(targetType, request.getTargetRole(), request.getTargetUserId());
+        List<User> targets = resolveBroadcastTargetUsers(
+                targetType, request.getTargetRole(), request.getTargetUserIds());
         targets.forEach(u -> notificationService.sendBroadcast(u, request.getTitle(), request.getMessage()));
+    }
+
+    /** Anlık duyuru için hedef listesi — "Kişiye Özel" birden fazla kullanıcı seçebilir. */
+    private List<User> resolveBroadcastTargetUsers(
+            ReminderRule.TargetType targetType, String targetRole, List<UUID> targetUserIds) {
+        return switch (targetType) {
+            case ALL -> userRepository.findAllByDeletedFalse();
+            case ROLE -> userRepository.findAllByUserTypeNameAndDeletedFalse(targetRole);
+            case USER -> targetUserIds == null
+                    ? new ArrayList<>()
+                    : userRepository.findAllById(targetUserIds).stream()
+                      .filter(u -> !Boolean.TRUE.equals(u.getDeleted()))
+                      .collect(Collectors.toList());
+        };
     }
 
     @Scheduled(cron = "0 * * * * *", zone = "Europe/Istanbul")
@@ -188,8 +211,8 @@ public class ReminderRuleService {
     private List<User> resolveTargetUsers(
             ReminderRule.TargetType targetType, String targetRole, UUID targetUserId) {
         return switch (targetType) {
-            case ALL -> userRepository.findAll();
-            case ROLE -> userRepository.findAllByUserTypeName(targetRole);
+            case ALL -> userRepository.findAllByDeletedFalse();
+            case ROLE -> userRepository.findAllByUserTypeNameAndDeletedFalse(targetRole);
             case USER -> {
                 if (targetUserId == null) {
                     yield new ArrayList<>();

@@ -12,6 +12,10 @@ import java.util.UUID;
 
 public interface MembershipRepository extends JpaRepository<Membership, UUID> {
 
+    void deleteByUserId(UUID userId);
+
+    boolean existsByUserIdAndStatusIn(UUID userId, List<MembershipStatus> statuses);
+
     List<Membership> findAllByUserIdAndStatus(UUID userId, MembershipStatus status);
     List<Membership> findAllByUserId(UUID userId);
 

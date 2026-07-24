@@ -9,6 +9,10 @@ import java.util.UUID;
 
 public interface ReminderRuleRepository extends JpaRepository<ReminderRule, UUID> {
 
+    void deleteByTargetUserId(UUID userId);
+
+    boolean existsByCreatedById(UUID userId);
+
     @Query("""
         SELECT r FROM ReminderRule r
         LEFT JOIN FETCH r.targetUser

@@ -11,6 +11,8 @@ import java.util.UUID;
 
 public interface IncomeRepository extends JpaRepository<Income, UUID> {
 
+    boolean existsByCreatedById(UUID userId);
+
     @Query("""
         SELECT i FROM Income i
         LEFT JOIN FETCH i.branchType

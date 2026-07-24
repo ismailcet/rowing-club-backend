@@ -56,7 +56,7 @@ public class AttendanceReminderService {
 
         if (incompleteCount > 0) {
             List<User> trainers = userRepository
-                    .findAllByUserTypeNameAndCanManageAttendanceTrue("ANTRENÖR");
+                    .findAllByUserTypeNameAndCanManageAttendanceTrueAndDeletedFalse("ANTRENÖR");
             final int finalCount = incompleteCount;
             trainers.forEach(t -> notificationService.sendAttendanceReminder(t, finalCount));
         }

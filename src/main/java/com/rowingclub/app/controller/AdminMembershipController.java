@@ -72,4 +72,14 @@ public class AdminMembershipController {
         return ResponseEntity.ok(ApiResponse.success(membershipService.getAllMemberships()));
     }
 
+    /** Bir üyenin üzerindeki tekil üyeliği (paketi) aktif ↔ pasif (iptal) arasında değiştirir. */
+    @PutMapping("/{membershipId}/toggle-active")
+    public ResponseEntity<ApiResponse<MembershipResponse>> toggleMembershipActive(
+            @PathVariable UUID membershipId) {
+        return ResponseEntity.ok(
+                ApiResponse.success("Üyelik durumu güncellendi",
+                        membershipService.toggleMembershipActive(membershipId))
+        );
+    }
+
 }

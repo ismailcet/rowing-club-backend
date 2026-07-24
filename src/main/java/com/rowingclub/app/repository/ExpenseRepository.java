@@ -11,6 +11,10 @@ import java.util.UUID;
 
 public interface ExpenseRepository extends JpaRepository<Expense, UUID> {
 
+    boolean existsByCreatedById(UUID userId);
+
+    boolean existsByTrainerId(UUID trainerId);
+
     @Query("""
         SELECT e FROM Expense e
         LEFT JOIN FETCH e.branchType

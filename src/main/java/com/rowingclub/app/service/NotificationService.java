@@ -123,7 +123,7 @@ public class NotificationService {
 
 
     private void sendToAdmins(String title, String body) {
-        List<User> admins = userRepository.findAllByUserTypeName("ADMIN");
+        List<User> admins = userRepository.findAllByUserTypeNameAndDeletedFalse("ADMIN");
         admins.forEach(admin -> send(admin, title, body));
     }
 

@@ -11,6 +11,8 @@ import java.util.UUID;
 
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
 
+    void deleteByUserId(UUID userId);
+
     List<Notification> findAllByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(UUID userId);
 
     long countByUserIdAndIsReadFalseAndIsDeletedFalse(UUID userId);

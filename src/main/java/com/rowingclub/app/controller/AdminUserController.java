@@ -70,6 +70,15 @@ public class AdminUserController {
         );
     }
 
+    /** Admin: kullanıcıyı kalıcı olarak siler (geçmiş kaydı varsa engellenir). */
+    @DeleteMapping("/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteUser(
+            @PathVariable UUID userId) {
+        userService.deleteUser(userId);
+        return ResponseEntity.ok(ApiResponse.success("Kullanıcı silindi", null));
+    }
+
     /** Admin/Antrenör: üyenin branş bazlı gelişim/seviye bilgisi. */
     @GetMapping("/{userId}/progress")
     @PreAuthorize("hasAnyRole('ADMIN', 'ANTRENÖR')")
