@@ -1,6 +1,8 @@
 package com.rowingclub.app.common;
 
 import com.rowingclub.app.common.exception.BusinessException;
+import com.rowingclub.app.config.ServiceIoLogFilter;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,9 +21,24 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    /**
+     * service_io_logs tablosunda "nereden kaynaklandı" bilgisini doldurmak
+     * için, exception tipini + mesajını + uygulama kodundaki ilk stack frame'i
+     * (com.rowingclub.app paketindeki ilk satır) request'e not düşer.
+     */
+    private void recordErrorSource(HttpServletRequest request, Throwable ex) {
+        String origin = java.util.Arrays.stream(ex.getStackTrace())
+                .filter(el -> el.getClassName().startsWith("com.rowingclub.app"))
+                .findFirst()
+                .map(el -> el.getClassName() + "." + el.getMethodName() + ":" + el.getLineNumber())
+                .orElse("bilinmiyor");
+        String source = ex.getClass().getSimpleName() + ": " + ex.getMessage() + " (" + origin + ")";
+        request.setAttribute(ServiceIoLogFilter.ERROR_SOURCE_ATTRIBUTE, source);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Map<String, String>>> handleValidation(
-            MethodArgumentNotValidException ex) {
+            MethodArgumentNotValidException ex, HttpServletRequest request) {
 
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach(error -> {
@@ -30,35 +47,41 @@ public class GlobalExceptionHandler {
             errors.put(field, message);
         });
 
+        recordErrorSource(request, ex);
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error("Validasyon hatası", errors));
     }
 
     @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ApiResponse<Void>> handleBusiness(BusinessException ex) {
+    public ResponseEntity<ApiResponse<Void>> handleBusiness(BusinessException ex, HttpServletRequest request) {
         log.warn("Business exception: {}", ex.getMessage());
+        recordErrorSource(request, ex);
         return ResponseEntity
                 .status(ex.getStatus())
                 .body(ApiResponse.error(ex.getMessage()));
     }
 
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ApiResponse<Void>> handleBadCredentials(BadCredentialsException ex) {
+    public ResponseEntity<ApiResponse<Void>> handleBadCredentials(
+            BadCredentialsException ex, HttpServletRequest request) {
+        recordErrorSource(request, ex);
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(ApiResponse.error("Email veya şifre hatalı"));
     }
 
     @ExceptionHandler(DisabledException.class)
-    public ResponseEntity<ApiResponse<Void>> handleDisabled(DisabledException ex) {
+    public ResponseEntity<ApiResponse<Void>> handleDisabled(DisabledException ex, HttpServletRequest request) {
+        recordErrorSource(request, ex);
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
                 .body(ApiResponse.error("Hesabınız deaktif edilmiştir"));
     }
 
     @ExceptionHandler(LockedException.class)
-    public ResponseEntity<ApiResponse<Void>> handleLocked(LockedException ex) {
+    public ResponseEntity<ApiResponse<Void>> handleLocked(LockedException ex, HttpServletRequest request) {
+        recordErrorSource(request, ex);
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
                 .body(ApiResponse.error("Hesabınız kilitlenmiştir"));
@@ -66,7 +89,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccessDenied(
-            org.springframework.security.access.AccessDeniedException ex) {
+            org.springframework.security.access.AccessDeniedException ex, HttpServletRequest request) {
+        recordErrorSource(request, ex);
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
                 .body(ApiResponse.error(
@@ -74,8 +98,9 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Void>> handleGeneral(Exception ex) {
+    public ResponseEntity<ApiResponse<Void>> handleGeneral(Exception ex, HttpServletRequest request) {
         log.error("Beklenmeyen hata: ", ex);
+        recordErrorSource(request, ex);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("Beklenmeyen bir hata oluştu"));

@@ -34,6 +34,7 @@ public class UserService {
     private final TrainerBranchRepository trainerBranchRepository;
     private final MembershipTypeRepository membershipTypeRepository;
     private final MembershipRepository membershipRepository;
+    private final EnrollmentService enrollmentService;
 
     public UserResponse getProfile(UUID userId) {
         User user = userRepository.findById(userId)
@@ -115,6 +116,8 @@ public class UserService {
                     HttpStatus.CONFLICT
             );
         }
+
+        enrollmentService.cancelFutureEnrollmentsForUser(userId);
 
         user.setDeleted(true);
         user.setIsActive(false);

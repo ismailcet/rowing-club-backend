@@ -76,11 +76,14 @@ public class NotificationService {
         sendToAdmins(title, body);
     }
 
-    public void sendSessionCancelled(User user, Session session) {
+    public void sendSessionCancelled(User user, Session session, String reason) {
         String title = "Ders İptal Edildi";
         String body = session.getTemplate().getName() + " · "
                 + session.getSessionDate() + " " + session.getStartTime()
                 + " dersi iptal edilmiştir.";
+        if (reason != null && !reason.isBlank()) {
+            body += " Sebep: " + reason;
+        }
         send(user, title, body);
     }
 

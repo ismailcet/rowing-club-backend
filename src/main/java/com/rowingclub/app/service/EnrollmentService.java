@@ -159,6 +159,34 @@ public class EnrollmentService {
         }
 
         // Kontejan iade (kaydın düştüğü kovaya)
+        performCancellation(enrollment);
+
+        return toResponse(enrollment);
+    }
+
+    /**
+     * Bir kullanıcı silinirken (UserService.deleteUser), henüz gerçekleşmemiş
+     * (bugün ya da ileri tarihli) aktif ders kayıtlarını iptal eder — kontenjan
+     * ve ders hakkı iadesi yapılır, ders takvimindeki yeri boşalır. Geçmiş
+     * (zaten gerçekleşmiş) kayıtlara hiç dokunulmaz, yoklama geçmişi korunur.
+     */
+    @Transactional
+    public void cancelFutureEnrollmentsForUser(UUID userId) {
+        LocalDate today = LocalDate.now();
+        var activeEnrollments =
+                enrollmentRepository.findAllByUserIdAndStatus(userId, Enrollment.EnrollmentStatus.ACTIVE);
+
+        for (var enrollment : activeEnrollments) {
+            var session = enrollment.getSession();
+            boolean isFuture = !session.getSessionDate().isBefore(today);
+            boolean isScheduled = session.getStatus() == Session.SessionStatus.SCHEDULED;
+            if (isFuture && isScheduled) {
+                performCancellation(enrollment);
+            }
+        }
+    }
+
+    private void performCancellation(Enrollment enrollment) {
         var session = enrollment.getSession();
         if (Boolean.TRUE.equals(enrollment.getUsedTrainingSlot())) {
             session.setCurrentTrainingCapacity(
@@ -174,8 +202,6 @@ public class EnrollmentService {
 
         sessionRepository.save(session);
         enrollmentRepository.save(enrollment);
-
-        return toResponse(enrollment);
     }
 
     public List<EnrollmentResponse> getMyEnrollments(UUID userId) {

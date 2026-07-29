@@ -430,6 +430,7 @@ public class SessionService {
             session.setStatus(newStatus);
             if (newStatus == Session.SessionStatus.CANCELLED
                     && oldStatus != Session.SessionStatus.CANCELLED) {
+                session.setCancellationReason(request.getCancellationReason());
                 for (Enrollment enrollment
                         : enrollmentRepository.findActiveEnrollmentsBySessionId(sessionId)) {
                     if (Boolean.TRUE.equals(enrollment.getUsedTrainingSlot())) {
@@ -441,7 +442,8 @@ public class SessionService {
                     sessionCreditService.refundSession(enrollment);
                     enrollment.setStatus(Enrollment.EnrollmentStatus.CANCELLED);
                     enrollmentRepository.save(enrollment);
-                    notificationService.sendSessionCancelled(enrollment.getUser(), session);
+                    notificationService.sendSessionCancelled(
+                            enrollment.getUser(), session, request.getCancellationReason());
                 }
             }
         }
@@ -491,6 +493,7 @@ public class SessionService {
                 .currentTrainingCapacity(session.getCurrentTrainingCapacity())
                 .trainingCapacity(session.getTrainingCapacity())
                 .status(session.getStatus().name())
+                .cancellationReason(session.getCancellationReason())
                 .isEnrolled(isEnrolled)
                 .build();
     }

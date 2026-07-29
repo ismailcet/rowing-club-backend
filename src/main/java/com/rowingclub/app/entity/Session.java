@@ -55,6 +55,9 @@ public class Session {
     @Builder.Default
     private SessionStatus status = SessionStatus.SCHEDULED;
 
+    @Column(name = "cancellation_reason", length = 500)
+    private String cancellationReason;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

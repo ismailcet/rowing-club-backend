@@ -3,8 +3,7 @@ package com.rowingclub.app.config;
 import com.rowingclub.app.security.CustomAccessDeniedHandler;
 import com.rowingclub.app.security.CustomAuthenticationEntryPoint;
 import com.rowingclub.app.security.JwtAuthenticationFilter;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Bean;
+import lombok.RequiredArgsConstructor;import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -31,6 +30,7 @@ import com.rowingclub.app.repository.UserRepository;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
+    private final com.rowingclub.app.config.ServiceIoLogFilter serviceIoLogFilter;
     private final UserRepository userRepository;
     private final CustomAccessDeniedHandler accessDeniedHandler;
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
@@ -57,7 +57,8 @@ public class SecurityConfig {
                         .authenticationEntryPoint(authenticationEntryPoint)
                 )
                 .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(serviceIoLogFilter, JwtAuthenticationFilter.class);
 
         return http.build();
     }

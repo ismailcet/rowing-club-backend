@@ -30,6 +30,7 @@ public class SessionResponse {
     private Integer trainingCapacity;
 
     private String status;
+    private String cancellationReason;
 
     private Boolean isEnrolled;
 

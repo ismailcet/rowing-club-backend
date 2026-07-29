@@ -10,4 +10,6 @@ public class UpdateSessionRequest {
     private Integer maxCapacity;
 
     private String status;
+
+    private String cancellationReason;
 }
