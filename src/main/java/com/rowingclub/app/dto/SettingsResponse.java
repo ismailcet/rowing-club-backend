@@ -1,5 +1,6 @@
 package com.rowingclub.app.dto;
 
 public record SettingsResponse(
-        int cancellationDeadlineHours
+        int cancellationDeadlineHours,
+        String weeklySessionsTime
 ) {}

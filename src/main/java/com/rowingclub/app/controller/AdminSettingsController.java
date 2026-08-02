@@ -24,18 +24,26 @@ public class AdminSettingsController {
     @GetMapping
     public ResponseEntity<ApiResponse<SettingsResponse>> get() {
         int hours = settingService.getIntValue(SettingKeys.CANCELLATION_DEADLINE_HOURS);
+        String weeklyTime = settingService.getStringValue(SettingKeys.WEEKLY_SESSIONS_CRON_TIME);
         return ResponseEntity.ok(
-                new ApiResponse<>(true, "Ayarlar", new SettingsResponse(hours)));
+                new ApiResponse<>(true, "Ayarlar", new SettingsResponse(hours, weeklyTime)));
     }
 
     @PutMapping
     public ResponseEntity<ApiResponse<SettingsResponse>> update(
             @Valid @RequestBody SettingsUpdateRequest request) {
-        settingService.updateValue(
-                SettingKeys.CANCELLATION_DEADLINE_HOURS,
-                String.valueOf(request.cancellationDeadlineHours()));
+        if (request.cancellationDeadlineHours() != null) {
+            settingService.updateValue(
+                    SettingKeys.CANCELLATION_DEADLINE_HOURS,
+                    String.valueOf(request.cancellationDeadlineHours()));
+        }
+        if (request.weeklySessionsTime() != null && !request.weeklySessionsTime().isBlank()) {
+            settingService.updateValue(
+                    SettingKeys.WEEKLY_SESSIONS_CRON_TIME, request.weeklySessionsTime());
+        }
         int hours = settingService.getIntValue(SettingKeys.CANCELLATION_DEADLINE_HOURS);
+        String weeklyTime = settingService.getStringValue(SettingKeys.WEEKLY_SESSIONS_CRON_TIME);
         return ResponseEntity.ok(
-                new ApiResponse<>(true, "Ayarlar güncellendi", new SettingsResponse(hours)));
+                new ApiResponse<>(true, "Ayarlar güncellendi", new SettingsResponse(hours, weeklyTime)));
     }
 }

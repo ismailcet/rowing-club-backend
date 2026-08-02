@@ -3,13 +3,13 @@ package com.rowingclub.app.service;
 import com.rowingclub.app.common.exception.BusinessException;
 import com.rowingclub.app.common.exception.DuplicateResourceException;
 import com.rowingclub.app.common.exception.ResourceNotFoundException;
+import com.rowingclub.app.config.WeeklySessionsSchedulerConfig;
 import com.rowingclub.app.dto.*;
 import com.rowingclub.app.entity.*;
 import com.rowingclub.app.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +41,7 @@ public class SessionService {
     private final NotificationService notificationService;
     private final SessionCreditService sessionCreditService;
     private final TrainerBranchRepository trainerBranchRepository;
+    private final UserRepository userRepository;
 
 
     @Transactional
@@ -100,7 +101,8 @@ public class SessionService {
         sessionTemplateRepository.save(template);
     }
 
-    @Scheduled(cron = "0 0 14 * * SUN", zone = "Europe/Istanbul")
+    /** Zamanlaması sabit değil — {@link WeeklySessionsSchedulerConfig} tarafından
+     *  ayardan (WEEKLY_SESSIONS_CRON_TIME) okunan saatte tetiklenir. */
     @Transactional
     public void createWeeklySessions() {
         log.info("Haftalık session oluşturma başladı...");
@@ -140,6 +142,7 @@ public class SessionService {
         if (created > 0) {
             membershipRepository.findActiveMembershipUsers()
                     .forEach(notificationService::sendWeeklySessionsOpened);
+            notifyStaffOfWeeklySessions(created);
         }
     }
 
@@ -177,9 +180,18 @@ public class SessionService {
         if (created > 0) {
             membershipRepository.findActiveMembershipUsers()
                     .forEach(notificationService::sendWeeklySessionsOpened);
+            notifyStaffOfWeeklySessions(created);
         }
 
         return created;
+    }
+
+    /** Haftalık program oluşunca tüm admin ve antrenörlere bilgilendirme gönderir. */
+    private void notifyStaffOfWeeklySessions(int created) {
+        userRepository.findAllByUserTypeNameAndDeletedFalse("ADMIN")
+                .forEach(u -> notificationService.sendWeeklySessionsCreatedToStaff(u, created));
+        userRepository.findAllByUserTypeNameAndDeletedFalse("ANTRENÖR")
+                .forEach(u -> notificationService.sendWeeklySessionsCreatedToStaff(u, created));
     }
 
     public List<SessionResponse> getSessionsForUser(UUID userId, LocalDate startDate, LocalDate endDate) {

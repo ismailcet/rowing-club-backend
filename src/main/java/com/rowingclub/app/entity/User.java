@@ -74,6 +74,11 @@ public class User implements UserDetails {
     @Builder.Default
     private Boolean canManageDailyBookings = false;
 
+    /** Antrenör yetkisi: derse (session'a) elle katılımcı ekleyebilir. */
+    @Column(name = "can_add_participants", nullable = false)
+    @Builder.Default
+    private Boolean canAddParticipants = false;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

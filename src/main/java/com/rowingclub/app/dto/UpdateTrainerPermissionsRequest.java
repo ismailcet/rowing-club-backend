@@ -17,4 +17,6 @@ public class UpdateTrainerPermissionsRequest {
     private Boolean canViewAthletes;
     /** Günlük (pakete bağlı olmayan) rezervasyon oluşturabilir mi? */
     private Boolean canManageDailyBookings;
+    /** Derse (session'a) elle katılımcı ekleyebilir mi? */
+    private Boolean canAddParticipants;
 }

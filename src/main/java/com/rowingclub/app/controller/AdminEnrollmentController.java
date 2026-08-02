@@ -34,10 +34,17 @@ public class AdminEnrollmentController {
         }
     }
 
-    /** Yoklama / katılımcı ekleme-çıkarma yetkisi. */
+    /** Yoklama / katılımcı çıkarma yetkisi. */
     private void requireAttendance(User user) {
         if (!isAdmin(user) && !Boolean.TRUE.equals(user.getCanManageAttendance())) {
             throw new AccessDeniedException("Yoklama/katılımcı yönetme yetkiniz yok");
+        }
+    }
+
+    /** Derse elle katılımcı ekleme yetkisi (yoklamadan bağımsız, ayrı bir yetki). */
+    private void requireAddParticipants(User user) {
+        if (!isAdmin(user) && !Boolean.TRUE.equals(user.getCanAddParticipants())) {
+            throw new AccessDeniedException("Derse üye ekleme yetkiniz yok");
         }
     }
 
@@ -76,7 +83,7 @@ public class AdminEnrollmentController {
             @PathVariable UUID sessionId,
             @PathVariable UUID userId,
             @AuthenticationPrincipal User user) {
-        requireAttendance(user);
+        requireAddParticipants(user);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Katılımcı eklendi",
                         enrollmentService.adminEnroll(sessionId, userId)));

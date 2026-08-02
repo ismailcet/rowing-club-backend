@@ -41,8 +41,17 @@ public class AdminUserController {
         );
     }
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers() {
+    @PreAuthorize("hasAnyRole('ADMIN', 'ANTRENÖR')")
+    public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers(
+            @AuthenticationPrincipal User currentUser) {
+        // Antrenör "Sporcular" listesini göremiyorsa VE derse üye ekleme yetkisi
+        // de yoksa engelle (admin her zaman görür). Üye ekleme akışı (member
+        // picker) bu uca gidiyor, o yüzden getUsersByType ile aynı kural.
+        if (!"ADMIN".equalsIgnoreCase(currentUser.getUserType().getName())
+                && !Boolean.TRUE.equals(currentUser.getCanViewAthletes())
+                && !Boolean.TRUE.equals(currentUser.getCanAddParticipants())) {
+            throw new AccessDeniedException("Üye listesini görme yetkiniz yok");
+        }
         return ResponseEntity.ok(ApiResponse.success(userService.getAllUsers()));
     }
 
@@ -51,9 +60,12 @@ public class AdminUserController {
     public ResponseEntity<ApiResponse<List<UserResponse>>> getUsersByType(
             @PathVariable String userTypeName,
             @AuthenticationPrincipal User currentUser) {
-        // Antrenör "Sporcular" listesini göremiyorsa engelle (admin her zaman görür).
+        // Antrenör "Sporcular" listesini göremiyorsa VE derse üye ekleme yetkisi
+        // de yoksa engelle (admin her zaman görür). İkisinden biri yeterli —
+        // ikisi de üye listesine bakmayı gerektiren, ayrı ama meşru sebepler.
         if (!"ADMIN".equalsIgnoreCase(currentUser.getUserType().getName())
-                && !Boolean.TRUE.equals(currentUser.getCanViewAthletes())) {
+                && !Boolean.TRUE.equals(currentUser.getCanViewAthletes())
+                && !Boolean.TRUE.equals(currentUser.getCanAddParticipants())) {
             throw new AccessDeniedException("Sporcular listesini görme yetkiniz yok");
         }
         return ResponseEntity.ok(

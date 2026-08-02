@@ -21,7 +21,7 @@ public class SettingsController {
     @GetMapping
     public ResponseEntity<ApiResponse<SettingsResponse>> getSettings() {
         int hours = settingService.getIntValue(SettingKeys.CANCELLATION_DEADLINE_HOURS);
-        SettingsResponse data = new SettingsResponse(hours);
+        SettingsResponse data = new SettingsResponse(hours, null);
         return ResponseEntity.ok(new ApiResponse<>(true, "Ayarlar getirildi", data));
     }
 }

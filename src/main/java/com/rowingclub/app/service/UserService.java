@@ -2,6 +2,7 @@ package com.rowingclub.app.service;
 
 import com.rowingclub.app.common.exception.BusinessException;
 import com.rowingclub.app.common.exception.ResourceNotFoundException;
+import com.rowingclub.app.dto.ChangePasswordRequest;
 import com.rowingclub.app.dto.ResetPasswordRequest;
 import com.rowingclub.app.dto.UpdateProfileRequest;
 import com.rowingclub.app.dto.UpdateTrainerBranchesRequest;
@@ -61,6 +62,19 @@ public class UserService {
 
         userRepository.save(user);
         return toResponse(user);
+    }
+
+    /**
+     * Kullanıcının kendi şifresini değiştirmesi — sadece yeni şifreyi ayarlar,
+     * mevcut şifre doğrulaması istenmez (bilinçli tercih: admin için basit
+     * "yeni şifre + tekrar" akışı yeterli görüldü).
+     */
+    public void changePassword(UUID userId, ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
 
     @Transactional
@@ -149,6 +163,7 @@ public class UserService {
         user.setCanManageAttendance(attendance);
         user.setCanViewAthletes(Boolean.TRUE.equals(request.getCanViewAthletes()));
         user.setCanManageDailyBookings(Boolean.TRUE.equals(request.getCanManageDailyBookings()));
+        user.setCanAddParticipants(Boolean.TRUE.equals(request.getCanAddParticipants()));
         userRepository.save(user);
         return toResponse(user);
     }
@@ -190,6 +205,7 @@ public class UserService {
                 .canManageAttendance(user.getCanManageAttendance())
                 .canViewAthletes(user.getCanViewAthletes())
                 .canManageDailyBookings(user.getCanManageDailyBookings())
+                .canAddParticipants(user.getCanAddParticipants())
                 .assignedBranchIds(
                         trainerBranchRepository.findMembershipTypeIdsByTrainerId(user.getId()))
                 .createdAt(user.getCreatedAt())

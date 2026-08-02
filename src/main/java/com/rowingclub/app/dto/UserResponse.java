@@ -22,6 +22,7 @@ public class UserResponse {
     private Boolean canManageAttendance;
     private Boolean canViewAthletes;
     private Boolean canManageDailyBookings;
+    private Boolean canAddParticipants;
     private List<UUID> assignedBranchIds;
     private LocalDateTime createdAt;
 }

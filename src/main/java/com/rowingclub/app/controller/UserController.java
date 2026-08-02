@@ -1,6 +1,7 @@
 package com.rowingclub.app.controller;
 
 import com.rowingclub.app.common.ApiResponse;
+import com.rowingclub.app.dto.ChangePasswordRequest;
 import com.rowingclub.app.dto.UpdateFcmTokenRequest;
 import com.rowingclub.app.dto.UpdateProfileRequest;
 import com.rowingclub.app.dto.UserResponse;
@@ -42,5 +43,13 @@ public class UserController {
             @RequestBody UpdateFcmTokenRequest request) {
         userService.updateFcmToken(user.getId(), request.getToken());
         return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @PutMapping("/me/password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        userService.changePassword(user.getId(), request);
+        return ResponseEntity.ok(ApiResponse.success("Şifre güncellendi", null));
     }
 }

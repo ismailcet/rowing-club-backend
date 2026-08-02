@@ -1,0 +1,1 @@
+ALTER TABLE users ADD COLUMN can_add_participants BOOLEAN NOT NULL DEFAULT FALSE;

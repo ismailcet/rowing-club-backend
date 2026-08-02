@@ -100,6 +100,13 @@ public class NotificationService {
         send(user, title, body);
     }
 
+    /** Admin/antrenörlere: haftalık program otomatik/manuel oluşturulunca bilgilendirme. */
+    public void sendWeeklySessionsCreatedToStaff(User user, int createdCount) {
+        String title = "Haftalık Program Oluşturuldu";
+        String body = "Önümüzdeki haftanın ders programı oluşturuldu (" + createdCount + " ders).";
+        send(user, title, body);
+    }
+
     public void sendPlanPriceUpdated(User user, MembershipPlan plan, BigDecimal oldPrice, BigDecimal newPrice) {
         String title = "Paket Ücreti Güncellendi";
         String body = plan.getName() + " paketinin ücreti " + oldPrice
