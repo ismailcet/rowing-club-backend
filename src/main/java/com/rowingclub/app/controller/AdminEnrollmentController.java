@@ -64,7 +64,7 @@ public class AdminEnrollmentController {
     @PutMapping("/{enrollmentId}/attendance")
     public ResponseEntity<ApiResponse<Void>> setAttendance(
             @PathVariable UUID enrollmentId,
-            @RequestParam Boolean attended,
+            @RequestParam(required = false) Boolean attended,
             @AuthenticationPrincipal User user) {
         requireAttendance(user);
         enrollmentService.setAttendance(enrollmentId, attended);

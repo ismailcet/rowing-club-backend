@@ -29,6 +29,8 @@ public class DailyBookingResponse {
     private String customerPhone;
     private String notes;
     private Boolean paymentReceived;
+    private String paymentReceivedByName;
+    private LocalDateTime paymentReceivedAt;
     private Boolean arrived;
     private String createdByName;
     private LocalDateTime createdAt;

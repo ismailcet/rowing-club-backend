@@ -79,6 +79,6 @@ public class AdminDailyBookingController {
             @RequestBody UpdateDailyBookingStatusRequest request) {
         requireDailyBookingPermission(user);
         return ResponseEntity.ok(
-                ApiResponse.success(dailyBookingService.updateStatus(id, request)));
+                ApiResponse.success(dailyBookingService.updateStatus(id, request, user)));
     }
 }

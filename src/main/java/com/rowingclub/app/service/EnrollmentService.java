@@ -265,7 +265,7 @@ public class EnrollmentService {
         var session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Session", "id", sessionId));
 
-        if (isPastSession(session)) {
+        if (isPastDay(session)) {
             throw new BusinessException("Geçmiş tarihli derse kayıt yapılamaz", HttpStatus.BAD_REQUEST);
         }
 
@@ -365,11 +365,19 @@ public class EnrollmentService {
 
     // ---------- Üyelik yaşam döngüsü yardımcıları ----------
 
-    /** Seansın başlangıcı geçmişte mi? */
+    /** Seansın başlangıcı geçmişte mi? (üyenin kendi self-servis kaydı için —
+     *  ders zaten başladıysa üye kendi kendine kayıt olamaz.) */
     private boolean isPastSession(Session session) {
         java.time.LocalDateTime start =
                 java.time.LocalDateTime.of(session.getSessionDate(), session.getStartTime());
         return start.isBefore(java.time.LocalDateTime.now());
+    }
+
+    /** Seans önceki bir günden mi? (admin/antrenörün elle katılımcı eklemesi
+     *  için — bugünün dersi, saati geçmiş olsa bile hâlâ düzenlenebilir
+     *  kalmalı; sadece geçmiş GÜNLERİN dersine ekleme engellenir.) */
+    private boolean isPastDay(Session session) {
+        return session.getSessionDate().isBefore(java.time.LocalDate.now());
     }
 
     /** Üyeliğin planı, verilen branş (membershipType) için geçerli mi? */

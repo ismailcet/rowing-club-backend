@@ -72,6 +72,13 @@ public class DailyBooking {
     @Builder.Default
     private Boolean paymentReceived = false;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "payment_received_by")
+    private User paymentReceivedBy;
+
+    @Column(name = "payment_received_at")
+    private LocalDateTime paymentReceivedAt;
+
     @Column(nullable = false)
     @Builder.Default
     private Boolean arrived = false;

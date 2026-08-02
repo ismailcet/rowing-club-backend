@@ -165,6 +165,9 @@ public class DailyBookingService {
                         .customerPhone(request.getCustomerPhone())
                         .notes(request.getNotes())
                         .paymentReceived(Boolean.TRUE.equals(request.getPaymentReceived()))
+                        .paymentReceivedBy(Boolean.TRUE.equals(request.getPaymentReceived()) ? creator : null)
+                        .paymentReceivedAt(Boolean.TRUE.equals(request.getPaymentReceived())
+                                ? java.time.LocalDateTime.now() : null)
                         .createdBy(creator)
                         .build());
             }
@@ -183,6 +186,9 @@ public class DailyBookingService {
                     .customerPhone(request.getCustomerPhone())
                     .notes(request.getNotes())
                     .paymentReceived(Boolean.TRUE.equals(request.getPaymentReceived()))
+                    .paymentReceivedBy(Boolean.TRUE.equals(request.getPaymentReceived()) ? creator : null)
+                    .paymentReceivedAt(Boolean.TRUE.equals(request.getPaymentReceived())
+                            ? java.time.LocalDateTime.now() : null)
                     .createdBy(creator)
                     .build());
         }
@@ -200,12 +206,19 @@ public class DailyBookingService {
     }
 
     @Transactional
-    public DailyBookingResponse updateStatus(UUID id, UpdateDailyBookingStatusRequest request) {
+    public DailyBookingResponse updateStatus(UUID id, UpdateDailyBookingStatusRequest request, User actor) {
         DailyBooking booking = dailyBookingRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("DailyBooking", "id", id));
 
         if (request.getPaymentReceived() != null) {
             booking.setPaymentReceived(request.getPaymentReceived());
+            if (Boolean.TRUE.equals(request.getPaymentReceived())) {
+                booking.setPaymentReceivedBy(actor);
+                booking.setPaymentReceivedAt(java.time.LocalDateTime.now());
+            } else {
+                booking.setPaymentReceivedBy(null);
+                booking.setPaymentReceivedAt(null);
+            }
         }
         if (request.getArrived() != null) {
             booking.setArrived(request.getArrived());
@@ -230,6 +243,9 @@ public class DailyBookingService {
                 .customerPhone(b.getCustomerPhone())
                 .notes(b.getNotes())
                 .paymentReceived(b.getPaymentReceived())
+                .paymentReceivedByName(
+                        b.getPaymentReceivedBy() != null ? b.getPaymentReceivedBy().getFullName() : null)
+                .paymentReceivedAt(b.getPaymentReceivedAt())
                 .arrived(b.getArrived())
                 .createdByName(b.getCreatedBy().getFullName())
                 .createdAt(b.getCreatedAt())
